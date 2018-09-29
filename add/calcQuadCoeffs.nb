@@ -1,0 +1,264 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      9245,        254]
+NotebookOptionsPosition[      8535,        223]
+NotebookOutlinePosition[      8880,        238]
+CellTagsIndexPosition[      8837,        235]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Convolution Quadrature Coefficients", "Title",
+ CellChangeTimes->{{3.718616805843172*^9, 3.7186168248789062`*^9}, {
+  3.720934019891317*^9, 3.7209340200081043`*^9}, {3.7213143167747917`*^9, 
+  3.721314321535946*^9}, {3.747235757305931*^9, 3.7472357613445377`*^9}}],
+
+Cell["\<\
+This is a Wolfram Mathematica script for the calculation of high-order end \
+corrections for integrals of smooth functions. The coefficients are intended \
+to be in calculating convolution integrals.
+This script is additional material to our Python implementation and \
+publication (see http://www.github.com/oliverhaas/openConv).\
+\>", "Text",
+ CellChangeTimes->{{3.71846937031215*^9, 3.7184693977478733`*^9}, {
+   3.719907329525364*^9, 3.719907348294083*^9}, {3.7203543216609287`*^9, 
+   3.720354406344445*^9}, {3.7207809019258337`*^9, 3.720781095268413*^9}, {
+   3.720934020043079*^9, 3.7209340227857037`*^9}, 3.720935156268909*^9, {
+   3.720935193828916*^9, 3.720935212979561*^9}, {3.746611532181793*^9, 
+   3.7466116166289387`*^9}, {3.747235772290366*^9, 3.7472358557340364`*^9}}],
+
+Cell[CellGroupData[{
+
+Cell["Initialization", "Chapter",
+ CellChangeTimes->{{3.746794085869082*^9, 3.7467940878203526`*^9}, {
+  3.7467941579792624`*^9, 3.7467941624281683`*^9}, {3.7467950871577196`*^9, 
+  3.746795095285771*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"SetDirectory", "[", 
+  RowBox[{"NotebookDirectory", "[", "]"}], "]"}]], "Input"],
+
+Cell[BoxData["\<\"D:\\\\HESSENBOX-DA\\\\PhD\\\\code\\\\openAbel\\\\add\"\>"], \
+"Output",
+ CellChangeTimes->{3.746966832983198*^9}]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Smooth Kernels", "Chapter",
+ CellChangeTimes->{{3.7193195641092167`*^9, 3.7193195828201723`*^9}, 
+   3.720934022818919*^9, 3.7209352147387867`*^9}],
+
+Cell["\<\
+Typical evaluation time: Second
+The definition of +/- is right end correction of the interval.\
+\>", "Text",
+ CellChangeTimes->{{3.719319754307191*^9, 3.719319771675888*^9}, {
+   3.7193204997490177`*^9, 3.719320512109529*^9}, {3.720707604450871*^9, 
+   3.720707605116591*^9}, {3.720873926251732*^9, 3.720873992341194*^9}, {
+   3.720934022842885*^9, 3.720934023090053*^9}, 3.720935156344488*^9, {
+   3.720935215793054*^9, 3.7209352205826*^9}, 3.721324803424474*^9}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"ClearAll", "[", "\"\<Global`*\>\"", "]"}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"kmax", "=", "19"}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"prec", "=", "80"}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"xmax", "=", 
+   RowBox[{"N", "[", 
+    RowBox[{"1", ",", "prec"}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"n", "=", 
+   RowBox[{"10", "^", "3"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"h", "=", 
+   RowBox[{"xmax", "/", 
+    RowBox[{"(", 
+     RowBox[{"n", "-", "1"}], ")"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"err", "=", 
+   RowBox[{"10", "^", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"-", "prec"}], "/", "2"}], ")"}]}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"fun", "=", 
+    RowBox[{"x", "^", 
+     RowBox[{"(", 
+      RowBox[{"ii", "-", "1"}], ")"}]}]}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Do", "[", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"kInner", "=", 
+       RowBox[{"Floor", "[", 
+        RowBox[{"k", "/", "2"}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"kOuter", "=", 
+       RowBox[{"Floor", "[", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"k", "-", "1"}], ")"}], "/", "2"}], "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"b", "=", 
+       RowBox[{"-", 
+        RowBox[{"Table", "[", 
+         RowBox[{
+          RowBox[{"Total", "[", 
+           RowBox[{
+            RowBox[{"Table", "[", 
+             RowBox[{
+              RowBox[{
+               RowBox[{
+                RowBox[{"D", "[", 
+                 RowBox[{"fun", ",", 
+                  RowBox[{"{", 
+                   RowBox[{"x", ",", 
+                    RowBox[{
+                    RowBox[{"2", "*", "ss"}], "-", "1"}]}], "}"}]}], "]"}], 
+                "*", 
+                RowBox[{"h", "^", 
+                 RowBox[{"(", 
+                  RowBox[{
+                   RowBox[{"2", "ss"}], "-", "1"}], ")"}]}], "*", 
+                RowBox[{
+                 RowBox[{"BernoulliB", "[", 
+                  RowBox[{"2", "*", "ss"}], "]"}], "/", 
+                 RowBox[{"Factorial", "[", 
+                  RowBox[{"2", "*", "ss"}], "]"}]}]}], "/.", 
+               RowBox[{"x", "\[Rule]", "0"}]}], ",", 
+              RowBox[{"{", 
+               RowBox[{"ss", ",", "1", ",", 
+                RowBox[{"ii", "-", "1"}]}], "}"}]}], "]"}], ",", 
+            RowBox[{"Method", "\[Rule]", "\"\<CompensatedSummation\>\""}]}], 
+           "]"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"ii", ",", "1", ",", "k"}], "}"}]}], "]"}]}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"A", "=", 
+       RowBox[{"Table", "[", 
+        RowBox[{
+         RowBox[{"fun", "/.", 
+          RowBox[{"x", "\[Rule]", 
+           RowBox[{"jj", "*", "h"}]}]}], ",", 
+         RowBox[{"{", 
+          RowBox[{"ii", ",", "1", ",", "k"}], "}"}], ",", 
+         RowBox[{"{", 
+          RowBox[{"jj", ",", 
+           RowBox[{"-", "kInner"}], ",", "kOuter"}], "}"}]}], "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"res", "=", 
+       RowBox[{
+        RowBox[{"LinearSolve", "[", 
+         RowBox[{"A", ",", "b"}], "]"}], "//", "N"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"res", "=", 
+       RowBox[{"Chop", "[", 
+        RowBox[{"res", ",", "err"}], "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"Export", "[", 
+       RowBox[{
+        RowBox[{"StringJoin", "[", 
+         RowBox[{"\"\<coeffs_smooth_\>\"", ",", 
+          RowBox[{"IntegerString", "[", 
+           RowBox[{"k", ",", "10", ",", "2"}], "]"}], ",", "\"\<.h5\>\""}], 
+         "]"}], ",", "res"}], "]"}], ";"}], "\[IndentingNewLine]", ",", 
+     RowBox[{"{", 
+      RowBox[{"k", ",", "1", ",", "kmax", ",", "1"}], "}"}]}], "]"}], ";"}], "//",
+   "AbsoluteTiming"}]}], "Input",
+ CellChangeTimes->{{3.719319594966259*^9, 3.719319625463737*^9}, {
+   3.719319687265229*^9, 3.71931971922711*^9}, {3.7193197775741673`*^9, 
+   3.719319799917427*^9}, {3.7193198398629303`*^9, 3.7193200115898848`*^9}, {
+   3.719320045855708*^9, 3.719320060103304*^9}, {3.7193201499548397`*^9, 
+   3.71932034876239*^9}, {3.719320414382888*^9, 3.719320417884067*^9}, {
+   3.719320517496818*^9, 3.719320547540556*^9}, {3.7199070943842382`*^9, 
+   3.719907094456521*^9}, {3.7207075917045*^9, 3.720707592361865*^9}, {
+   3.720707705608876*^9, 3.720707723515286*^9}, {3.720873034530004*^9, 
+   3.720873042015581*^9}, {3.720873108178318*^9, 3.720873108325721*^9}, {
+   3.721314515817835*^9, 3.721314536444519*^9}, {3.7213145725843754`*^9, 
+   3.721314671158206*^9}, {3.7213147262642927`*^9, 3.72131475063072*^9}, {
+   3.7213246352615385`*^9, 3.7213246483802195`*^9}, {3.7213262874255047`*^9, 
+   3.721326293773717*^9}, {3.7465906043943644`*^9, 3.7465906520505595`*^9}, {
+   3.74659068307335*^9, 3.7465906870493746`*^9}, {3.7465907834181075`*^9, 
+   3.7465907968417654`*^9}, {3.7465912914728556`*^9, 3.746591292400218*^9}, {
+   3.746591327016576*^9, 3.746591335295575*^9}, {3.746591496992337*^9, 
+   3.746591514607366*^9}, {3.746592602805303*^9, 3.7465926067098246`*^9}, 
+   3.746631519534729*^9}],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{"0.23617136358553684`", ",", "Null"}], "}"}]], "Output",
+ CellChangeTimes->{
+  3.721314598691497*^9, {3.721314644000552*^9, 3.7213146645578213`*^9}, {
+   3.721314727437173*^9, 3.7213147512681446`*^9}, 3.721324741692548*^9, 
+   3.721331290285983*^9, 3.7465907980687003`*^9, 3.746591296850173*^9, 
+   3.7465986420519047`*^9, 3.7466112869549875`*^9}]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{958, 988},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+FrontEndVersion->"11.0 for Microsoft Windows (64-bit) (September 21, 2016)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 270, 3, 90, "Title"],
+Cell[853, 27, 795, 12, 68, "Text"],
+Cell[CellGroupData[{
+Cell[1673, 43, 205, 3, 64, "Chapter"],
+Cell[CellGroupData[{
+Cell[1903, 50, 104, 2, 30, "Input"],
+Cell[2010, 54, 131, 2, 30, "Output"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2190, 62, 153, 2, 64, "Chapter"],
+Cell[2346, 66, 474, 8, 49, "Text"],
+Cell[CellGroupData[{
+Cell[2845, 78, 5261, 131, 411, "Input"],
+Cell[8109, 211, 386, 7, 30, "Output"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+
