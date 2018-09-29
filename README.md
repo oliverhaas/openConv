@@ -55,13 +55,13 @@ If there are any issues, bugs or feature request just let me know.
 
 The convolution integral in one dimension is defined as
 
-<a href="https://www.codecogs.com/eqnedit.php?latex=(f*g)(t)=\int_{-\infty}^{\infty}f(\tau)g(t-\tau)d\tau" target="_blank">
-<img src="https://latex.codecogs.com/gif.latex?=(f*g)(t)=\int_{-\infty}^{\infty}f(\tau)g(t-\tau)d\tau" title="Convolution Integral" /></a>
+<a href="https://www.codecogs.com/eqnedit.php?latex(f*g)(t)=\int_{-\infty}^{\infty}f(\tau)g(t-\tau)d\tau" target="_blank">
+<img src="https://latex.codecogs.com/gif.latex?(f*g)(t)=\int_{-\infty}^{\infty}f(\tau)g(t-\tau)d\tau" title="Convolution Integral" /></a>
 
 and the discrete equivalent (which implies uniformly discretized data and kernel)
 
-<a href="https://www.codecogs.com/eqnedit.php?latex=(f*g)[n]=\sum_{m=-\infty}^{\infty}f[m]g[n-m]" target="_blank">
-<img src="https://latex.codecogs.com/gif.latex?=(f*g)[n]=\sum_{m=-\infty}^{\infty}f[m]g[n-m]" title="Convolution Discrete" /></a>
+<a href="https://www.codecogs.com/eqnedit.php?latex(f*g)[n]=\sum_{m=-\infty}^{\infty}f[m]g[n-m]" target="_blank">
+<img src="https://latex.codecogs.com/gif.latex?(f*g)[n]=\sum_{m=-\infty}^{\infty}f[m]g[n-m]" title="Convolution Discrete" /></a>
 
 Since both f and g often have some kind of symmetry around 0, **openConv** deals only with that case for now.
 
