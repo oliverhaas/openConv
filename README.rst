@@ -2,9 +2,13 @@
 openConv README
 =========
 
-
 .. image:: https://travis-ci.org/oliverhaas/openConv.svg?branch=master
     :target: https://travis-ci.org/oliverhaas/openConv
+    :alt: Build Status
+
+.. image:: https://readthedocs.org/projects/openconv/badge/?version=latest
+    :target: https://openconv.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 **Note:** It's best to view this readme in the 
 `openConv documentation <https://openconv.readthedocs.io/en/latest/index.html>`_.
@@ -25,6 +29,7 @@ for comparisons.
 
 Quick Start
 --------------
+
 
 In most cases this should be pretty simple:
 
@@ -65,6 +70,7 @@ different setups.
 Issues
 --------------
 
+
 If there are any issues, bugs or feature request just let me know. As of now there are some gaps in the implementation, e.g.
 not all convolution symmetry types are available in all methods, but can be added if requested.
 
@@ -84,7 +90,7 @@ and the discrete equivalent (which implies uniformly discretized data and kernel
 <a href="https://www.codecogs.com/eqnedit.php?latex(f*g)[n]=\sum_{m=-\infty}^{\infty}f[m]g[n-m]" target="_blank">
 <img src="https://latex.codecogs.com/gif.latex?(f*g)[n]=\sum_{m=-\infty}^{\infty}f[m]g[n-m]" title="Convolution Discrete" /></a>
 
-Since both f and g often have some kind of symmetry around 0, **openConv** deals only with that case for now.
+Since both f and g often have some kind of symmetry around 0, **openConv** deals only with that case.
 
 It is fairly common to use directly the discrete convolution to approximate the convolution integral, often with smaller
 improvements like using trapezoidal rule instead of rectangle rule as above. This yields usually neither good order of convergence
