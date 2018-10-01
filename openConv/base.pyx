@@ -146,3 +146,101 @@ cdef int destroy_conv(conv_plan* pl) nogil except -1:
 
 
 
+
+
+
+cdef double* cpExt(double* dataIn, int nData, int nLExt, int lBnd, double shL, 
+                   int nRExt, int rBnd, double shR, int order) nogil except NULL:
+
+    cdef:
+        double* dataOut = <double*> malloc((nData+nLExt+nRExt)*sizeof(double))
+        int ii
+
+    if NULL == dataOut:
+        with gil:
+            raise MemoryError('Malloc ruturned a NULL pointer, probably not enough memory available.')
+
+    for ii in range(nData):
+        dataOut[nLExt+ii] = dataIn[ii]
+
+    # Copy and extend data as specified
+    if lBnd == 0:   # no symmetry, just extrapolation
+        for ii in range(nLExt):
+            dataOut[ii] = interp.polInt(&dataOut[nLExt], order, ii-nLExt)
+    elif lBnd == 1: # odd symmetry
+        if shL == 0.:
+            for ii in range(nLExt):
+                dataOut[nLExt-1-ii] = -dataOut[nLExt+1+ii]
+        elif shL == 0.5:
+            for ii in range(nLExt):
+                dataOut[nLExt-1-ii] = -dataOut[nLExt+ii]
+        else:
+            free(dataOut)
+            with gil:
+                raise NotImplementedError('Method not implemented for given parameters.')
+    elif lBnd == 2: # even symmetry
+        if shL == 0.:
+            for ii in range(nLExt):
+                dataOut[nLExt-1-ii] = dataOut[nLExt+1+ii]
+        elif shL == 0.5:
+            for ii in range(nLExt):
+                dataOut[nLExt-1-ii] = dataOut[nLExt+ii]
+        else:
+            free(dataOut)
+            with gil:
+                raise NotImplementedError('Method not implemented for given parameters.')
+    else:
+        free(dataOut)
+        with gil:
+            raise NotImplementedError('Method not implemented for given parameters.')
+    if rBnd == 0:   # no symmetry, just extrapolation
+        for ii in range(nRExt):
+            dataOut[nData+nLExt+ii] = interp.polInt(&dataOut[nData+nLExt-order], order, ii+order)
+    elif rBnd == 1: # odd symmetry
+        if shR == 0.:
+            for ii in range(nRExt):
+                dataOut[nData+nLExt+ii] = -dataOut[nData+nLExt-2-ii]
+        elif shR == 0.5:
+            for ii in range(nRExt):
+                dataOut[nData+nLExt+ii] = -dataOut[nData+nLExt-1-ii]
+        else:
+            free(dataOut)
+            with gil:
+                raise NotImplementedError('Method not implemented for given parameters.')
+    elif rBnd == 2: # even symmetry
+        if shR == 0.:
+            for ii in range(nLExt):
+                dataOut[nData+nLExt+ii] = dataOut[nData+nLExt-2-ii]
+        elif shR == 0.5:
+            for ii in range(nLExt):
+                dataOut[nData+nLExt+ii] = dataOut[nData+nLExt-1-ii]
+        else:
+            free(dataOut)
+            with gil:
+                raise NotImplementedError('Method not implemented for given parameters.')
+    else:
+        free(dataOut)
+        with gil:
+            raise NotImplementedError('Method not implemented for given parameters.')
+            
+    
+    return dataOut
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
