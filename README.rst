@@ -7,7 +7,7 @@ openConv README
     :target: https://travis-ci.org/oliverhaas/openConv
 
 **Note:** It's best to view this readme in the 
-`openConv documentation <https://openconv.readthedocs.io/en/latest/index.html>`_
+`openConv documentation <https://openconv.readthedocs.io/en/latest/index.html>`_.
 
 
 
