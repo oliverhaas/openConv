@@ -54,7 +54,7 @@ cdef int execute_conv_trap(conv_plan* pl, double* dataIn, double* dataOut) nogil
     cdef:
         int ii, jj
         double temp, signData, signKernel
-        int orderM1Half, orderM1HalfInner, orderM1HalfDiff
+        int orderM1Half, orderM1HalfInner, orderM1HalfDiff, orderM1HalfSum
         int nDataOut = pl.nData+pl.nKernel-1
         
     # Symmetries
@@ -64,6 +64,7 @@ cdef int execute_conv_trap(conv_plan* pl, double* dataIn, double* dataOut) nogil
     orderM1Half = <int> ((pl.order-1)/2)
     orderM1HalfInner = <int> (pl.order/2)
     orderM1HalfDiff = orderM1HalfInner - orderM1Half
+    orderM1HalfSum = orderM1HalfInner + orderM1Half
             
     # Set output to zero first
     memset(dataOut, 0, nDataOut*sizeof(double))
@@ -83,7 +84,7 @@ cdef int execute_conv_trap(conv_plan* pl, double* dataIn, double* dataOut) nogil
             dataOut[ii] += signData*pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+jj-ii]
 
     # End corrections
-    # TODO check even orders
+    # TODO check maybe, and make function in base.pyx ???
     for ii in range(pl.nData-1):
         for jj in range(pl.order): # Central kernel right
             dataOut[ii] += signKernel*pl.coeffsSmooth[pl.order-1-jj]*pl.kernel[jj]*dataIn[ii+jj]
@@ -100,7 +101,8 @@ cdef int execute_conv_trap(conv_plan* pl, double* dataIn, double* dataOut) nogil
             dataOut[ii] += signData*pl.coeffsSmooth[jj]*pl.kernel[ii+pl.order-1-jj]*dataIn[pl.order-1-jj]
     for ii in range(nDataOut):
         for jj in range(pl.order):    # Tail left axis left
-            dataOut[ii] += signData*pl.coeffsSmooth[pl.order-1-jj]*pl.kernel[pl.nData+ii-2+pl.order-jj]*dataIn[pl.nData-2+pl.order-jj]
+            dataOut[ii] += signData*pl.coeffsSmooth[pl.order-1-jj] * \
+                           pl.kernel[pl.nData+ii-2+pl.order-orderM1HalfDiff-jj]*dataIn[pl.nData-2+pl.order-orderM1HalfDiff-jj]
 
     for ii in range(nDataOut):
         dataOut[ii] *= pl.stepSize
