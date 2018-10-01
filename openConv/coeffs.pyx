@@ -3,6 +3,7 @@ import os
 import numpy as np
 import cython as cy
 
+cimport numpy as np
 
 dataDir = os.path.dirname(__file__) + 'coeffsData/'
 coeffsAllDict = {}
@@ -20,7 +21,7 @@ with cy.wraparound(True):
 
 
 # Actual function to get the coefficients
-def getCoeffs(coeffsName, order):
+cdef np.ndarray getCoeffs(coeffsName, int order):
     return coeffsAllDict[coeffsName][order]
 
 

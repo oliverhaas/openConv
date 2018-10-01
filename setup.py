@@ -2,13 +2,13 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 from Cython.Build import cythonize
+import numpy
 
 ecadef = ["-O3", "-Wunused-but-set-variable"]
 #ecadef = ["-O0", "-g", "-Wunused-but-set-variable"]
-iddef = ["/usr/local/include/", "./"]
+iddef = ["/usr/local/include/", "./", numpy.get_include()]
 lddef = ["/usr/local/lib/"]
 compdir = {'boundscheck': False, 'nonecheck': False, 'wraparound': False, 'cdivision': True, 'profile': False, 'infer_types': False}
-
 
 extensions = cythonize([
                         Extension('openConv.__init__',

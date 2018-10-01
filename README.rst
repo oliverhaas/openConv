@@ -19,7 +19,7 @@ Introduction
 --------------
 
 
-The main goal of **openConv** is to provide fast and efficients numerical convolutions of symmetric
+The main goal of **openConv** is to provide fast and efficient numerical convolutions of symmetric
 and smooth kernels and data of equispaced data from smooth functions in Python with all actual calculations done in Cython. 
 The most useful methods implemented in my module for that purpose use the Fast Multipole Method combined with
 arbitrary order end correction of the trapezoidal rule to achieve both fast convergence and linear run time. Other methods are implemented
