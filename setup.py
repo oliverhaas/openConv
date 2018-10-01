@@ -21,16 +21,16 @@ extensions = cythonize([
                             extra_compile_args = ecadef,
                             include_dirs = iddef
                             ),
-                        Extension('openConv.quad',
-                            sources=['openConv/quad.pyx'],
+                        Extension('openConv.trap',
+                            sources=['openConv/trap.pyx'],
                             extra_compile_args = ecadef,
                             include_dirs = iddef
                             ),
-                        Extension('openConv.fmm',
-                            sources=['openConv/fmm.pyx'],
-                            extra_compile_args = ecadef,
-                            include_dirs = iddef
-                            ),
+#                        Extension('openConv.fmm',
+#                            sources=['openConv/fmm.pyx'],
+#                            extra_compile_args = ecadef,
+#                            include_dirs = iddef
+#                            ),
                         Extension('openConv.wrap',
                             sources=['openConv/wrap.pyx'],
                             extra_compile_args = ecadef,
@@ -43,6 +43,11 @@ extensions = cythonize([
                             ),
                         Extension('openConv.mathFun',
                             sources=['openConv/mathFun.pyx'],
+                            extra_compile_args = ecadef,
+                            include_dirs = iddef
+                            ),
+                        Extension('openConv.interpolate',
+                            sources=['openConv/interpolate.pyx'],
                             extra_compile_args = ecadef,
                             include_dirs = iddef
                             ),
@@ -73,7 +78,7 @@ logoArt = """
              |_|                             
                                   
               
-openAbel  Copyright (C) 2017-2018  Oliver Sebastian Haas
+openConv  Copyright (C) 2017-2018  Oliver Sebastian Haas
                                              
 """
 print logoArt

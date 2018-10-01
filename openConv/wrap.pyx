@@ -10,12 +10,12 @@ cimport base
 cdef class Conv(object):
 
 
-    def __init__(self, int nData, double shift, double stepSize, 
-                 int method = 3, int order = 2, double eps = 1.e-15):
+    def __init__(self, int nData, double shift, int nKernel, double shiftKernel, double stepSize, 
+                 int leftBoundaryKernel = 0, int rightBoundaryKernel = 0, int method = 3, int order = 2, double eps = 1.e-15):
         
         try:
-            self.plan = base.plan_conv(nData, shift, stepSize, 
-                                       method = method, order = order, eps = eps)
+            self.plan = base.plan_conv(nData, shift, NULL, nKernel, shiftKernel, stepSize, leftBoundaryKernel = leftBoundaryKernel, 
+                                       rightBoundaryKernel = rightBoundaryKernel, method = method, order = order, eps = eps)
         except:
             print "Unexpected error in Cython routines:", sys.exc_info()[0], sys.exc_info()[1]
             raise

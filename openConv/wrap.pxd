@@ -1,10 +1,10 @@
 
 
 
-cimport openAbel.abel.base as base
+cimport openConv.base as base
 
 
-cdef class Abel(object):
+cdef class Conv(object):
     
     cdef:
-        base.abel_plan* plan
+        base.conv_plan* plan

@@ -10,20 +10,21 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      9245,        254]
-NotebookOptionsPosition[      8535,        223]
-NotebookOutlinePosition[      8880,        238]
-CellTagsIndexPosition[      8837,        235]
+NotebookDataLength[      9389,        255]
+NotebookOptionsPosition[      8679,        224]
+NotebookOutlinePosition[      9024,        239]
+CellTagsIndexPosition[      8981,        236]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
 
 Cell[CellGroupData[{
-Cell["Convolution Quadrature Coefficients", "Title",
+Cell["Convolution End Correction Coefficients", "Title",
  CellChangeTimes->{{3.718616805843172*^9, 3.7186168248789062`*^9}, {
   3.720934019891317*^9, 3.7209340200081043`*^9}, {3.7213143167747917`*^9, 
-  3.721314321535946*^9}, {3.747235757305931*^9, 3.7472357613445377`*^9}}],
+  3.721314321535946*^9}, {3.747235757305931*^9, 3.7472357613445377`*^9}, {
+  3.747288490165515*^9, 3.747288492709638*^9}}],
 
 Cell["\<\
 This is a Wolfram Mathematica script for the calculation of high-order end \
@@ -52,9 +53,9 @@ Cell[BoxData[
  RowBox[{"SetDirectory", "[", 
   RowBox[{"NotebookDirectory", "[", "]"}], "]"}]], "Input"],
 
-Cell[BoxData["\<\"D:\\\\HESSENBOX-DA\\\\PhD\\\\code\\\\openAbel\\\\add\"\>"], \
+Cell[BoxData["\<\"D:\\\\HESSENBOX-DA\\\\PhD\\\\code\\\\openConv\\\\add\"\>"], \
 "Output",
- CellChangeTimes->{3.746966832983198*^9}]
+ CellChangeTimes->{3.746966832983198*^9, 3.747235955519938*^9}]
 }, Open  ]]
 }, Open  ]],
 
@@ -207,16 +208,16 @@ Cell[BoxData[{
    3.7465907968417654`*^9}, {3.7465912914728556`*^9, 3.746591292400218*^9}, {
    3.746591327016576*^9, 3.746591335295575*^9}, {3.746591496992337*^9, 
    3.746591514607366*^9}, {3.746592602805303*^9, 3.7465926067098246`*^9}, 
-   3.746631519534729*^9}],
+   3.746631519534729*^9, {3.747236000147523*^9, 3.747236028476968*^9}}],
 
 Cell[BoxData[
  RowBox[{"{", 
-  RowBox[{"0.23617136358553684`", ",", "Null"}], "}"}]], "Output",
+  RowBox[{"0.5970129251931011`", ",", "Null"}], "}"}]], "Output",
  CellChangeTimes->{
   3.721314598691497*^9, {3.721314644000552*^9, 3.7213146645578213`*^9}, {
    3.721314727437173*^9, 3.7213147512681446`*^9}, 3.721324741692548*^9, 
    3.721331290285983*^9, 3.7465907980687003`*^9, 3.746591296850173*^9, 
-   3.7465986420519047`*^9, 3.7466112869549875`*^9}]
+   3.7465986420519047`*^9, 3.7466112869549875`*^9, 3.7472360317414865`*^9}]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]]
@@ -238,27 +239,25 @@ CellTagsIndex->{}
 (*NotebookFileOutline
 Notebook[{
 Cell[CellGroupData[{
-Cell[580, 22, 270, 3, 90, "Title"],
-Cell[853, 27, 795, 12, 68, "Text"],
+Cell[580, 22, 323, 4, 90, "Title"],
+Cell[906, 28, 795, 12, 68, "Text"],
 Cell[CellGroupData[{
-Cell[1673, 43, 205, 3, 64, "Chapter"],
+Cell[1726, 44, 205, 3, 64, "Chapter"],
 Cell[CellGroupData[{
-Cell[1903, 50, 104, 2, 30, "Input"],
-Cell[2010, 54, 131, 2, 30, "Output"]
+Cell[1956, 51, 104, 2, 30, "Input"],
+Cell[2063, 55, 153, 2, 30, "Output"]
 }, Open  ]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[2190, 62, 153, 2, 64, "Chapter"],
-Cell[2346, 66, 474, 8, 49, "Text"],
+Cell[2265, 63, 153, 2, 64, "Chapter"],
+Cell[2421, 67, 474, 8, 49, "Text"],
 Cell[CellGroupData[{
-Cell[2845, 78, 5261, 131, 411, "Input"],
-Cell[8109, 211, 386, 7, 30, "Output"]
+Cell[2920, 79, 5307, 131, 411, "Input"],
+Cell[8230, 212, 409, 7, 30, "Output"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]]
 }
 ]
 *)
-
-(* End of internal cache information *)
 
