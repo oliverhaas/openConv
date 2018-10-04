@@ -27,7 +27,6 @@ def kernGauss(xx):
     return np.exp(-0.5*xx**2/sigKernel**2)
 nKernel = 1000
 
-#print stepSize
 
 # Parameters and output result
 sigResult = np.sqrt(sigData**2+sigKernel**2)

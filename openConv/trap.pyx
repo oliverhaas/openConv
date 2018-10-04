@@ -16,7 +16,7 @@ cimport openConv.base as base
 
 
 ############################################################################################################################################
-### Convolution based on end corrected trapezoidal rules                                                                            ###
+### Convolution based on end corrected trapezoidal/midpoint rules                                                                        ###
 ############################################################################################################################################
 
 ctypedef struct methodData_trap:

@@ -1,6 +1,8 @@
 language: python
 install:
-- pip install --only-binary=numpy,scipy,cython,matplotlib numpy scipy cython matplotlib
+- pip install --only-binary=numpy,scipy,cython numpy scipy cython
+- apt install libfftw3
 - python setup.py install
 script:
-- python -c 'import openConv'
+- cd tests
+- nosetests

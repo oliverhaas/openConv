@@ -1,5 +1,6 @@
-from openConv.base cimport conv_plan
 
+
+from openConv.base cimport conv_plan
 
 
 cdef int plan_conv_fft(conv_plan* plan) nogil except -1
