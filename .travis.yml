@@ -1,7 +1,7 @@
 language: python
 install:
 - pip install --only-binary=numpy,scipy,cython numpy scipy cython
-- sudo apt install libfftw3-bin
+- sudo apt install libfftw3-dev
 - python setup.py install
 script:
 - cd tests
