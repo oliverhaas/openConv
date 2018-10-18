@@ -67,14 +67,14 @@ cdef int execute_conv_trap(conv_plan* pl, double* dataIn, double* dataOut) nogil
         # kernel right
         for jj in range(pl.nData-ii):
             dataOut[ii] += signKernel*pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+ii+jj]
-    for ii in range(1,pl.nDataOut):
-        # kernel left to axis right
-        for jj in range(max(1,ii-pl.nData+1),ii+1):
-            dataOut[ii] += pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+ii-jj]
-    for ii in range(pl.nDataOut):
-        # kernel left after axis left
-        for jj in range(ii+1,pl.nData+ii):
-            dataOut[ii] += signData*pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+jj-ii]
+#    for ii in range(1,pl.nDataOut):
+#        # kernel left to axis right
+#        for jj in range(max(1,ii-pl.nData+1),ii+1):
+#            dataOut[ii] += pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+ii-jj]
+#    for ii in range(pl.nDataOut):
+#        # kernel left after axis left
+#        for jj in range(ii+1,pl.nData+ii):
+#            dataOut[ii] += signData*pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+jj-ii]
 
     return 0
 

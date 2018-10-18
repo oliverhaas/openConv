@@ -1,22 +1,4 @@
 
 
-
-
-cdef unsigned int uintMax(unsigned int aa, unsigned int bb) nogil:
-
-    if aa > bb:
-        return aa
-
-    return bb
-
-
-cdef unsigned int uintMin(unsigned int aa, unsigned int bb) nogil:
-
-    if aa < bb:
-        return aa
-
-    return bb
-
-
-
-
+cdef double sign(double xx) nogil:
+    return (1. if xx >=0 else -1.)

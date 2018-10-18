@@ -11,19 +11,21 @@ import matplotlib.pyplot as mpl
 
 
 # Parameters and input data
-order = 1
+order = 3
 orderM1Half = int((order-1)/2)
 
 nData = 2000
 xMaxData = 8.
-sigData = 1.
+sigData = 1.8
 stepSize = xMaxData/(nData-1)
 xData = np.linspace(-orderM1Half*stepSize, orderM1Half*stepSize+xMaxData, nData+2*orderM1Half)
 data = np.exp(-0.5*xData**2/sigData**2)
+data[:] = 0.
+data[orderM1Half+nData-1] = 1.
 
 # Kernel
-sigKernel = 1.5
-def kernGauss(xx):
+sigKernel = 0.9
+def kern(xx):
     return np.exp(-0.5*xx**2/sigKernel**2)
 nKernel = 1000
 
@@ -42,43 +44,59 @@ resultAna = np.sqrt(2.*np.pi)*beta*np.exp(-0.5*xResult**2/sigResult**2) * \
             (phi((xResult+xMaxData-alpha)/beta)-phi((xResult-xMaxData-alpha)/beta))
 
 xKernel = np.linspace(0., (nResult+nData-2)*stepSize, nResult+nData-1)
-kernel = kernGauss(xKernel)
+kernel = kern(xKernel)
 
 ############################################################################################################################################
 # Create convolution object, which does all precomputation possible without knowing the exact 
 # data. This way it's much faster if repeated convolutions with the same kernel are done.
-convObj = oc.Conv(nData, 2, kernGauss, None, 2, stepSize, nResult, method = 1, order = order)    
-                 
+convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 0, order = order)    
 result = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
 
-#print 'example'
-#
-#print result[0]
-#test = (kernel[0]*data[0] + 2*kernel[1]*data[1] + 2*kernel[2]*data[2])*stepSize
-#print test
-#print test-result[0]
-#for ii in range(3):
-#    print ii, data[ii]
-#for ii in range(3):
-#    print ii, kernel[ii]
+convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 1, order = order)    
+result2 = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
 
-    
-mpl.plot(xData, data)
-mpl.plot(xKernel, kernel)
-mpl.plot(xResult, result)
-mpl.plot(xResult, resultAna)
+convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 2, order = order)    
+result3 = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
+#result3 = result2
+
+convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 3, order = order)    
+result4 = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
 
 mpl.figure()
-mpl.semilogy(xData, data)
-mpl.semilogy(xKernel, kernel)
-mpl.semilogy(xResult, result)
-mpl.semilogy(xResult, resultAna)
+#mpl.plot(xData, data, label='data')
+#mpl.plot(xKernel, kernel, label='kernel')
+mpl.plot(xResult, result, label='trap')
+#mpl.plot(xResult, result2, label='fft')
+mpl.plot(xResult, result3, 'r:', label='fmmCheb')
+mpl.plot(xResult, result4, 'g--', label='fmmExpCheb')
+#mpl.plot(xResult, resultAna)
+mpl.legend()
 
 mpl.figure()
-mpl.semilogy(xResult, np.abs(result-resultAna))
+#mpl.semilogy(xData, data, label='data')
+#mpl.semilogy(xKernel, kernel, label='kernel')
+mpl.semilogy(xResult, result, label='trap')
+#mpl.semilogy(xResult, result2, label='fft')
+mpl.semilogy(xResult, result3, label='fmmCheb')
+mpl.semilogy(xResult, result4, label='fmmExpCheb')
+#mpl.semilogy(xResult, resultAna)
+mpl.legend()
+
+#mpl.figure()
+##mpl.semilogy(xResult, np.abs(result-result))
+##mpl.semilogy(xResult, np.abs(result2-result), label='fft')
+#mpl.semilogy(xResult, np.abs(result3-result), label='fmmCheb')
+#mpl.semilogy(xResult, np.abs(result4-result), label='fmmExpCheb')
+#mpl.legend()
 
 mpl.figure()
-mpl.semilogy(xResult[:-1], np.abs((result[:-1]-resultAna[:-1])/resultAna[:-1]))
+mpl.semilogy(xResult[:-1], np.clip(np.abs((result3[:-1]-result[:-1])/result[:-1]),1.e-17,np.inf), label='fmmCheb')
+mpl.semilogy(xResult[:-1], np.clip(np.abs((result4[:-1]-result[:-1])/result[:-1]),1.e-17,np.inf), label='fmmExpCheb')
+#mpl.semilogy(xResult[:-1], np.abs((result[:-1]-resultAna[:-1])/resultAna[:-1]))
+#mpl.semilogy(xResult[:-1], np.abs((result2[:-1]-resultAna[:-1])/resultAna[:-1]))
+#mpl.semilogy(xResult[:-1], np.abs((result3[:-1]-resultAna[:-1])/resultAna[:-1]))
+#mpl.semilogy(xResult[:-1], np.abs((result4[:-1]-resultAna[:-1])/resultAna[:-1]))
+mpl.legend()
 mpl.show()
 
 ## Plotting

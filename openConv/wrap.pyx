@@ -19,13 +19,16 @@ cdef class Conv(object):
             double xMin, xMax
             double[::1] kernel
             int nKernel, orderM1Half
+            funPtr kernelFun
+            void* kernelFunPar
         
         if not (symKernel == 1 or symKernel == 2) or not (symData == 1 or symData == 2) or \
            not (shiftData == 0.) or not (shiftKernel == 0.):
             raise NotImplementedError('Not implemented for given parameters.')
 
         orderM1Half = <int> ((order-1)/2)
-            
+        
+        self.kernelFunPy = kernelFunPy  # Saved here so it doesn't get garbage collected early, not sure if needed
         if kernelFunPy == None and kernelIn == None:
             raise TypeError('At least one of kernel function or kernel vector has to be not None.')
         elif kernelIn == None:
@@ -36,12 +39,21 @@ cdef class Conv(object):
             kernel = kernelFunPy(np.asarray(xTemp))
             leftBoundaryKernel = 3
             rightBoundaryKernel = 3
+            kernelFun = &kernelFunPyWrap
+            kernelFunPar = <void*> kernelFunPy
+        elif kernelFunPy == None:
+            nKernel = kernelIn.shape[0] - ((leftBoundaryKernel == 3) + (rightBoundaryKernel == 3))*orderM1Half
+            kernel = np.ascontiguousarray(kernelIn)     # Ensure C contiguous data
+            kernelFun = NULL
+            kernelFunPar = NULL
         else:
             nKernel = kernelIn.shape[0] - ((leftBoundaryKernel == 3) + (rightBoundaryKernel == 3))*orderM1Half
             kernel = np.ascontiguousarray(kernelIn)     # Ensure C contiguous data
+            kernelFun = &kernelFunPyWrap
+            kernelFunPar = <void*> kernelFunPy
         try:
             self.plan = base.plan_conv(nData, symData, &kernel[0], nKernel, symKernel, stepSize, nDataOut,
-                                       kernelFun = NULL, kernelFunPar = NULL, shiftData = shiftData, shiftKernel = shiftKernel,
+                                       kernelFun = kernelFun, kernelFunPar = kernelFunPar, shiftData = shiftData, shiftKernel = shiftKernel,
                                        leftBoundaryKernel = leftBoundaryKernel, rightBoundaryKernel = rightBoundaryKernel, method = method, 
                                        order = order, eps = eps)
         except:
@@ -69,4 +81,17 @@ cdef class Conv(object):
 
     def __dealloc__(self):
         base.destroy_conv(self.plan)
+
+
+
+cdef int kernelFunPyWrap(double* xx, void* par, double* out) nogil:
+    
+    with gil:
+#        print 'hello', xx[0]
+#        print <object> par, <object> par[0], <object> (par[0])
+#        raw_input('...')
+        fpy = <object> par
+        out[0] = fpy(xx[0])
+    
+    return 0
 

@@ -1,5 +1,5 @@
 
-cimport openConv.interpolate as interp
+#cimport openConv.interpolate as interp
 
 
 ctypedef int (*funPtr)(double*, void*, double*) nogil

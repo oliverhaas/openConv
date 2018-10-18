@@ -5,11 +5,10 @@ from libc.string cimport memset
 
 from openConv.trap cimport plan_conv_trap, execute_conv_trap, destroy_conv_trap
 from openConv.fft cimport plan_conv_fft, execute_conv_fft, destroy_conv_fft
-#from openConv.fmm cimport plan_conv_fmmTrapEndCorr, execute_conv_fmmTrapEndCorr, destroy_conv_fmmTrapEndCorr
+from openConv.fmm cimport plan_conv_fmmCheb, execute_conv_fmmCheb, destroy_conv_fmmCheb, \
+                          plan_conv_fmmExpCheb, execute_conv_fmmExpCheb, destroy_conv_fmmExpCheb
 cimport openConv.interpolate as interp
 import openConv.coeffs as coeffs
-from openConv.base cimport conv_plan, funPtr    # import from own *.pxd 
-
 
     
 ############################################################################################################################################
@@ -64,7 +63,7 @@ cdef conv_plan* plan_conv(int nData, int symData, double* kernel, int nKernel, i
 
     # Check for correct kernel size
     if pl.nKernel < pl.nDataOut+pl.nData-1:  
-        if kernelFun == NULL:
+        if NULL == kernelFun:
             with gil:
                 raise ValueError('Not enough kernel data points for given parameters.')
         else:
@@ -84,14 +83,10 @@ cdef conv_plan* plan_conv(int nData, int symData, double* kernel, int nKernel, i
                 plan_conv_trap(pl)
             elif pl.method == 1:
                 plan_conv_fft(pl)
-#            elif pl.method == 2:
-#                plan_conv_fmmCheb(pl, order = order, eps = eps)
-#            elif pl.method == 3:
-#                plan_conv_fmmExpCheb(pl, order = order, eps = eps)
-#            elif pl.method == 4:
-#                plan_conv_fullCheb(pl, order = order, eps = eps)
-#            elif pl.method == 5:
-#                plan_conv_fullExpCheb(pl, order = order, eps = eps)
+            elif pl.method == 2:
+                plan_conv_fmmCheb(pl, kernelFun = kernelFun, kernelFunPar = kernelFunPar, eps = eps)
+            elif pl.method == 3:
+                plan_conv_fmmExpCheb(pl, kernelFun = kernelFun, kernelFunPar = kernelFunPar, eps = eps)
             else:
                 with gil:
                     raise NotImplementedError('Method not implemented for given parameters.')
@@ -146,22 +141,18 @@ cdef int execute_conv(conv_plan* pl, double* dataIn, double* dataOut, int leftBo
         execute_conv_trap(pl, dataInCpExt, dataOut)
     elif pl.method == 1:
         execute_conv_fft(pl, dataInCpExt, dataOut)
-#    elif pl.method == 2:
-#        execute_conv_fmmCheb(pl, dataIn, dataOut, leftBoundary, rightBoundary)
-#    elif pl.method == 3:
-#        execute_conv_fmmExpCheb(pl, dataIn, dataOut, leftBoundary, rightBoundary)
-#    elif pl.method == 4:
-#        execute_conv_fullCheb(pl, dataIn, dataOut, leftBoundary, rightBoundary)
-#    elif pl.method == 5:
-#        execute_conv_fullExpCheb(pl, dataIn, dataOut, leftBoundary, rightBoundary)
+    elif pl.method == 2:
+        execute_conv_fmmCheb(pl, dataInCpExt, dataOut)
+    elif pl.method == 3:
+        execute_conv_fmmExpCheb(pl, dataInCpExt, dataOut)
     else:
         free(dataInCpExt)
         with gil:
             raise NotImplementedError('Method not implemented for given parameters.')
 
-    # Do end corrections
-    endCorrections(pl, dataInCpExt, dataOut)
-
+#    # Do end corrections
+#    endCorrections(pl, dataInCpExt, dataOut)
+    
     # Free temporary dataIn array
     free(dataInCpExt)
     
@@ -178,30 +169,22 @@ cdef int execute_conv(conv_plan* pl, double* dataIn, double* dataOut, int leftBo
 # Destroy given plan for Abel transform
 cdef int destroy_conv(conv_plan* pl) nogil except -1:
 
-    if NULL == pl:
-        with gil:
-            raise TypeError('Input plan is NULL.')
+    if not NULL == pl:
+        if pl.method == 0:
+            destroy_conv_trap(pl)
+        elif pl.method == 1:
+            destroy_conv_fft(pl)
+        elif pl.method == 2:
+            destroy_conv_fmmCheb(pl)
+        elif pl.method == 3:
+            destroy_conv_fmmExpCheb(pl)
+        else:
+            with gil:
+                raise NotImplementedError('Method not implemented for given parameters.')
 
-    if pl.method == 0:
-        destroy_conv_trap(pl)
-    elif pl.method == 1:
-        destroy_conv_fft(pl)
-#    elif pl.method == 2:
-#        destroy_conv_fmmCheb(pl)
-#    elif pl.method == 3:
-#        destroy_conv_fmmExpCheb(pl)
-#    elif pl.method == 4:
-#        destroy_conv_fullCheb(pl)
-#    elif pl.method == 5:
-#        destroy_conv_fullExpCheb(pl)
-    else:
-        with gil:
-            raise NotImplementedError('Method not implemented for given parameters.')
-
-    # TODO check
-    free(pl.coeffsSmooth)
-    free(pl.kernel)
-    free(pl)    
+        free(pl.coeffsSmooth)
+        free(pl.kernel)
+        free(pl)    
 
     return 0
 
@@ -375,6 +358,7 @@ cdef int endCorrections(conv_plan* pl, double* dataIn, double* dataOut) nogil ex
                                    pl.kernel[pl.nData+ii-2+pl.order-orderM1HalfDiff-jj]*dataIn[pl.nData-2+pl.order-orderM1HalfDiff-jj]
 
     return 0
+
 
 
     

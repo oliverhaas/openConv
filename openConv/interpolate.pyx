@@ -352,11 +352,15 @@ cdef int _interpolateD_Spline1D1DEqui(Interpolator* me, double* xx, double* out,
 cdef void _free_Spline1D1DEqui(Interpolator* me) nogil:
 
     cdef:
-        spline1D1DEquiHelper* helper = <spline1D1DEquiHelper*> me.helper
-
-    free(helper.cc)
-    free(helper)
-    free(me)
+        spline1D1DEquiHelper* helper
+        
+    if NULL == me: 
+        return
+    else:
+        helper = <spline1D1DEquiHelper*> me.helper
+        free(helper.cc)
+        free(helper)
+        free(me)
 
     return
 
@@ -519,12 +523,16 @@ cdef int _interpolateD_Newton1D1DEqui(Interpolator* me, double* xx, double* out,
 cdef void _free_Newton1D1DEqui(Interpolator* me) nogil:
 
     cdef:
-        newton1D1DEquiHelper* helper = <newton1D1DEquiHelper*> me.helper
+        newton1D1DEquiHelper* helper
 
-    free(helper.data)
-    free(helper)
-    free(me)
-
+    if NULL == me: 
+        return
+    else:
+        helper = <newton1D1DEquiHelper*> me.helper
+        free(helper.data)
+        free(helper)
+        free(me)
+    
     return
 
 

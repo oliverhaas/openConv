@@ -27,11 +27,11 @@ extensions = cythonize([
                             extra_link_args = ['-lfftw3', '-lm'],
                             include_dirs = iddef
                             ),
-#                        Extension('openConv.fmm',
-#                            sources=['openConv/fmm.pyx'],
-#                            extra_compile_args = ecadef,
-#                            include_dirs = iddef
-#                            ),
+                        Extension('openConv.fmm',
+                            sources=['openConv/fmm.pyx'],
+                            extra_compile_args = ecadef,
+                            include_dirs = iddef
+                            ),
                         Extension('openConv.wrap',
                             sources=['openConv/wrap.pyx'],
                             extra_compile_args = ecadef,
@@ -52,11 +52,12 @@ extensions = cythonize([
                             extra_compile_args = ecadef,
                             include_dirs = iddef
                             ),
-#                        Extension('openConv.coeffs',
-#                            sources=['openConv/coeffs.pyx'],
-#                            extra_compile_args = ecadef,
-#                            include_dirs = iddef
-#                            ),
+                        Extension('openConv.cheb',
+                            sources=['openConv/cheb.pyx'],
+                            extra_compile_args = ecadef + ['-lfftw3', '-lm'],
+                            extra_link_args = ['-lfftw3', '-lm'],
+                            include_dirs = iddef
+                            )
                         ], 
                         compiler_directives = compdir
                         )

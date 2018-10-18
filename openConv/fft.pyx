@@ -36,8 +36,8 @@ cdef extern from 'fftw3.h':
     # Destroy plan
     void fftw_destroy_plan(fftw_plan plan) nogil
 
-    # Print plan
-    void fftw_print_plan(fftw_plan plan) nogil
+#    # Print plan
+#    void fftw_print_plan(fftw_plan plan) nogil
 
 # Direction enum standard fft
 cdef enum:
@@ -58,9 +58,9 @@ cdef enum:
 
 # Transform type real to real fft
 cdef enum:
-     FFTW_R2HC = 0
-     FFTW_HC2R = 1
-     FFTW_DHT = 2
+#     FFTW_R2HC = 0
+#     FFTW_HC2R = 1
+#     FFTW_DHT = 2
      FFTW_REDFT00 = 3
      FFTW_REDFT01 = 4
      FFTW_REDFT10 = 5

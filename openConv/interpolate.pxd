@@ -2,7 +2,7 @@
 
 
 
-ctypedef int (*interpFun)(double* xx, void* params, double* out) nogil
+#ctypedef int (*interpFun)(double* xx, void* params, double* out) nogil
 
 ctypedef struct Interpolator:
     void* helper
