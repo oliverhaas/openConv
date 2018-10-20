@@ -100,7 +100,7 @@ cdef int plan_conv_fmmCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kernelF
         temp0 *= 0.5
         md.pp1 = max(md.pp1, cheb.estimateOrderCheb(md.kernelFun, md.kernelFunPar, temp0*0.25, temp0*0.75, eps, 20, nMax = 200))
         md.pp1 = max(md.pp1, cheb.estimateOrderCheb(md.kernelFun, md.kernelFunPar, temp0*0.5, temp0, eps, 20, nMax = 200))
-    md.pp = 20#max(3, md.pp1-1)
+    md.pp = max(3, md.pp1-1)
     md.pp1 = md.pp + 1
     md.nlevs = max(<int> ( math.log2((pl.nDataOut-1.)/(2.*md.pp)) + 1. ), 2)
     md.ss = max(<int> ( (pl.nDataOut-1.)/2**md.nlevs + 1. ), 3)                              # ss ~= 2*pp theoretical
@@ -338,13 +338,14 @@ ctypedef struct methodData_fmmExpCheb:
     int nlevs
     int kTotal
 
+
 # Plan FMM
 cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kernelFunPar = NULL, double eps = 1.e-15) nogil except -1:
 
     cdef:
         methodData_fmmExpCheb* md = NULL
         double temp0, temp1, ti, tauj
-        int orderM1Half
+        int orderM1Half#, positiveWarnFlag = 0
         int ii, jj, kk, ll
         double* tempArray0 = NULL
         double* funvalsExp = NULL
@@ -395,12 +396,16 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
     # Helper stuff
     orderM1Half = <int> ((pl.order-1)/2)
     
-    # Check if kernel is all positive
-    for ii in range(pl.nKernel+2*orderM1Half):
-        if pl.kernel[ii] <= 0.:
-            with gil:
-                print 'WARNING: Kernel not all positive, will be forced to be all positive.'
-            pl.kernel[ii] = const.doubleMin
+#    # TODO NEEDED?
+#    # Check if kernel is all positive
+#    for ii in range(pl.nKernel+2*orderM1Half):
+#        if pl.kernel[ii] <= 0. and positiveWarnFlag == 0:
+#            positiveWarnFlag = 1
+#            with gil:
+#                print 'WARNING: Kernel not all positive, will be forced to be all positive. Further warnings of this type will be ' \
+#                       + 'supressed.'
+#            pl.kernel[ii] = const.doubleMin
+
     # Handling of kernel function
     if NULL == kernelFun:
         # Interpolate in log scale since function assumed to be somewhat exponential
@@ -436,7 +441,7 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         pp1Exp = max(pp1Exp, 
                      cheb.estimateOrderCheb(kFL, kFLP, temp0*0.375, temp0*0.625, eps, kk, nMax = 200),
                      cheb.estimateOrderCheb(kFL, kFLP, temp0*0.625, temp0*0.875, eps, kk, nMax = 200))
-    ppExp = 1#max(2, pp1Exp-1)
+    ppExp = max(2, pp1Exp-1)
     pp1Exp = ppExp + 1
     
     chebRtsExp = <double*> malloc(pp1Exp*sizeof(double))
@@ -479,7 +484,7 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
             md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., eps, kk, nMax = 200))
     free(kFCS.funvals)
 
-    md.pp = 20#max(3, md.pp1-1)
+    md.pp = max(3, md.pp1-1)
     md.pp1 = md.pp + 1
     md.nlevs = max(<int> ( math.log2((pl.nDataOut-1.)/(2.*md.pp)) + 1. ), 2)
     md.ss = max(<int> ( (pl.nDataOut-1.)/2**md.nlevs + 1. ), 3)                              # ss ~= 2*pp theoretical
@@ -576,10 +581,10 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
     for ll in range(1,md.nlevs):
         for ii in range(md.pp1):
             for jj in range(md.pp1):
-#                temp0 = math.exp( -funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+md.pp1-1-jj] +
-#                                  funvalsExpEval[2*(ll-1)*md.pp1+md.pp1-1-jj] )
-#                temp1 = math.exp( -funvalsExpEval[2*md.nlevs*md.pp1+2*ll*md.pp1+md.pp1-1-jj] +
-#                                  funvalsExpEval[2*(ll-1)*md.pp1+md.pp1-1-jj] )
+#                temp0 = math.exp( -funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll] +
+#                                  funvalsExpEval[2*(ll-1)*md.pp1+md.pp1-1-ii] - funvalsExpEval0[2*(ll-1)] )
+#                temp1 = math.exp( -funvalsExpEval[2*md.nlevs*md.pp1+2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll] +
+#                                  funvalsExpEval[2*(ll-1)*md.pp1+md.pp1-1-ii] - funvalsExpEval0[2*(ll-1)] )
                 temp0 = 1.
                 temp1 = 1.
                 md.ltlp[ll*md.pp1**2+ii*md.pp1+jj] = temp0*cheb.lagrangePolInt(0.5*chebRts[jj]+0.5, ii, chebRts, md.pp1)
@@ -588,7 +593,8 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
 #                    print 'ltlm', ll, ii, jj, md.ltlm[ll*md.pp1**2+ii*md.pp1+jj], temp1
 #                    print 'ltlp', ll, ii, jj, md.ltlp[ll*md.pp1**2+ii*md.pp1+jj], temp0
 #                    print funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+jj], funvalsExpEval[2*(ll-1)*md.pp1+jj]
-#                    print funvalsExpEval[2*md.nlevs*md.pp1+(2*(ll-1)+1)*md.pp1+jj], funvalsExpEval[2*(ll)*md.pp1+jj]
+#                    print funvalsExpEval[2*md.nlevs*md.pp1+(2*ll)*md.pp1+jj], funvalsExpEval[2*(ll-1)*md.pp1+jj]
+#                    print funvalsExpEval0[2*ll], funvalsExpEval0[2*(ll-1)]
     # Source to moment
     for ii in range(md.ss):
         temp0 = 2.*(ii+1)/md.ss-1.
@@ -600,15 +606,15 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
 #                print 'stm', ii, jj, md.stm[ii*md.pp1+jj], temp1
 
     # Local to potential
-    temp1 = math.exp( cheb.barycentricInt(1., &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) )
+    temp1 = math.exp( cheb.barycentricInt(1., &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) - funvalsExpEval0[0] )
     for jj in range(md.pp1):
-#        md.ltp0[jj] = temp1*cheb.lagrangePolInt(1., jj, chebRts, md.pp1)#cheb.lagrangePolInt(-1., jj, chebRts, md.pp1)#
+#        md.ltp0[jj] = temp1*cheb.lagrangePolInt(-1., jj, chebRts, md.pp1)
         md.ltp0[jj] = cheb.lagrangePolInt(-1., jj, chebRts, md.pp1)
     for ii in range(md.ss):
         temp0 = 2.*(ii+1)/md.ss-1.
-        temp1 = math.exp( cheb.barycentricInt(-temp0, &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) )
+        temp1 = math.exp( cheb.barycentricInt(-temp0, &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) - funvalsExpEval0[0])
         for jj in range(md.pp1):
-#            md.ltp[ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)#cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)#
+#            md.ltp[ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
             md.ltp[ii*md.pp1+jj] = cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
 #            with gil:
 #                print 'ltp', ii, jj, md.ltp[ii*md.pp1+jj], temp1
@@ -619,25 +625,19 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
             for jj in range(md.pp1):
                 temp0 = md.kl[md.nlevs-ll]*(2.+0.5*(chebRts[jj]-chebRts[ii]))*md.ss*pl.stepSize
                 kFL(&temp0, kFLP, &temp1)
-#                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] - 
-#                                                               funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii])
+#                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] - 
+#                                                               funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
                 md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll])
 #                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1)
                 temp0 = md.kl[md.nlevs-ll]*(3.+0.5*(chebRts[jj]-chebRts[ii]))*md.ss*pl.stepSize
                 kFL(&temp0, kFLP, &temp1)
-#                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[(2*ll+1)*md.pp1+jj] - 
-#                                                                   funvalsExpEval[(2*ll+1)*md.pp1+md.pp1-1-ii] +
-#                                                                   funvalsExpEval[(2*ll+1)*md.pp1+jj] - funvalsExpEval[2*ll*md.pp1+jj] +
-#                                                                   funvalsExpEval[(2*ll+1)*md.pp1+md.pp1-1-ii] - 
-#                                                                   funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii]
-#                                                                   )
+#                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] - 
+#                                                                   funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
                 md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll])
 #                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1)                                                                   
 #                with gil:
 #                    print 'mtl', ll, ii, jj, md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj], md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj]
-                      
-#                      - funvalsExpEval[(2*ll+1)*md.pp1+jj] + funvalsExpEval0[2*ll+1]- 
-#                      funvalsExpEval[(2*ll+1)*md.pp1+jj] - funvalsExpEval[2*ll*md.pp1+jj] +
+
     free(funvalsExp)
     free(funvalsExpEval)
     free(funvalsExpEval0)
