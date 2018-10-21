@@ -24,7 +24,7 @@ data[:] = 0.
 data[orderM1Half+nData-1] = 1.
 
 # Kernel
-sigKernel = 0.9
+sigKernel = 0.6
 def kern(xx):
     return np.exp(-0.5*xx**2/sigKernel**2)
 nKernel = 1000

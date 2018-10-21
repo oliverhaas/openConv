@@ -441,7 +441,7 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         pp1Exp = max(pp1Exp, 
                      cheb.estimateOrderCheb(kFL, kFLP, temp0*0.375, temp0*0.625, eps, kk, nMax = 200),
                      cheb.estimateOrderCheb(kFL, kFLP, temp0*0.625, temp0*0.875, eps, kk, nMax = 200))
-    ppExp = max(2, pp1Exp-1)
+    ppExp = 1#max(2, pp1Exp-1)
     pp1Exp = ppExp + 1
     
     chebRtsExp = <double*> malloc(pp1Exp*sizeof(double))
@@ -504,7 +504,7 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
     
     chebRts = <double*> malloc(md.pp1*sizeof(double))
     
-    funvalsExpEval = <double*> malloc(2*2*md.nlevs*md.pp1*sizeof(double))
+    funvalsExpEval = <double*> malloc(3*2*md.nlevs*md.pp1*sizeof(double))
     funvalsExpEval0 = <double*> malloc(2*md.nlevs*sizeof(double))
     funvalsExp = <double*> malloc(2*md.nlevs*pp1Exp*sizeof(double))
     
@@ -547,6 +547,10 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
                                                                                    chebRtsExp, chebWghtsExp, pp1Exp)
             funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+ii] = cheb.barycentricInt(0.5*chebRts[ii]+0.5, &funvalsExp[2*ll*pp1Exp],
                                                                                        chebRtsExp, chebWghtsExp, pp1Exp)
+            funvalsExpEval[4*md.nlevs*md.pp1+2*ll*md.pp1+ii] = cheb.barycentricInt(2.*chebRts[ii]-1., &funvalsExp[2*ll*pp1Exp],
+                                                                                   chebRtsExp, chebWghtsExp, pp1Exp)
+            funvalsExpEval[4*md.nlevs*md.pp1+(2*ll+1)*md.pp1+ii] = cheb.barycentricInt(2.*chebRts[ii]+1., &funvalsExp[2*ll*pp1Exp],
+                                                                                       chebRtsExp, chebWghtsExp, pp1Exp)
         for ii in range(pp1Exp):
             temp0 = md.kl[md.nlevs-ll]*(3.+0.5*chebRtsExp[ii])*md.ss*pl.stepSize
             kFL(&temp0, kFLP, &funvalsExp[(2*ll+1)*pp1Exp+ii])
@@ -564,12 +568,12 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
             for jj in range(md.pp1):
 #                temp0 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+jj] - funvalsExpEval[2*(ll-1)*md.pp1+jj] )
 #                temp1 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+2*ll*md.pp1+jj] - funvalsExpEval[2*(ll-1)*md.pp1+jj] )
-#                temp0 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+jj] - funvalsExpEval0[2*ll] - 
-#                                  funvalsExpEval[2*(ll-1)*md.pp1+jj] + funvalsExpEval0[2*(ll-1)] )
-#                temp1 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+2*ll*md.pp1+jj] - funvalsExpEval0[2*ll] - 
-#                                  funvalsExpEval[2*(ll-1)*md.pp1+jj] + funvalsExpEval0[2*(ll-1)] )
-                temp0 = 1.
-                temp1 = 1.
+                temp0 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+jj] - funvalsExpEval0[2*ll] - 
+                                  funvalsExpEval[2*(ll-1)*md.pp1+jj] + funvalsExpEval0[2*(ll-1)] )
+                temp1 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+2*ll*md.pp1+jj] - funvalsExpEval0[2*ll] - 
+                                  funvalsExpEval[2*(ll-1)*md.pp1+jj] + funvalsExpEval0[2*(ll-1)] )
+#                temp0 = 1.
+#                temp1 = 1.
                 md.mtmp[ll*md.pp1**2+ii*md.pp1+jj] = temp0*cheb.lagrangePolInt(0.5*chebRts[jj]+0.5, ii, chebRts, md.pp1)
                 md.mtmm[ll*md.pp1**2+ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(0.5*chebRts[jj]-0.5, ii, chebRts, md.pp1)
 #                with gil:
@@ -585,8 +589,16 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
 #                                  funvalsExpEval[2*(ll-1)*md.pp1+md.pp1-1-ii] - funvalsExpEval0[2*(ll-1)] )
 #                temp1 = math.exp( -funvalsExpEval[2*md.nlevs*md.pp1+2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll] +
 #                                  funvalsExpEval[2*(ll-1)*md.pp1+md.pp1-1-ii] - funvalsExpEval0[2*(ll-1)] )
-                temp0 = 1.
-                temp1 = 1.
+#                temp0 = 1./math.exp( -funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] +
+#                                  funvalsExpEval[4*md.nlevs*md.pp1+(2*(ll-1)+1)*md.pp1+jj] - funvalsExpEval0[2*(ll-1)] )
+#                temp1 = 1./math.exp( -funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] +
+#                                  funvalsExpEval[4*md.nlevs*md.pp1+2*(ll-1)*md.pp1+jj] - funvalsExpEval0[2*(ll-1)] )
+                temp0 = 1./math.exp( -funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll] +
+                                  funvalsExpEval[4*md.nlevs*md.pp1+(2*(ll-1)+1)*md.pp1+md.pp1-1-ii] - funvalsExpEval0[2*(ll-1)] )
+                temp1 = 1./math.exp( -funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll] +
+                                  funvalsExpEval[4*md.nlevs*md.pp1+2*(ll-1)*md.pp1+md.pp1-1-ii] - funvalsExpEval0[2*(ll-1)] )
+#                temp0 = 1.
+#                temp1 = 1.
                 md.ltlp[ll*md.pp1**2+ii*md.pp1+jj] = temp0*cheb.lagrangePolInt(0.5*chebRts[jj]+0.5, ii, chebRts, md.pp1)
                 md.ltlm[ll*md.pp1**2+ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(0.5*chebRts[jj]-0.5, ii, chebRts, md.pp1)
 #                with gil:
@@ -600,41 +612,43 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         temp0 = 2.*(ii+1)/md.ss-1.
         temp1 = math.exp( cheb.barycentricInt(temp0, &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) - funvalsExpEval0[0] )
         for jj in range(md.pp1):
-#            md.stm[ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
-            md.stm[ii*md.pp1+jj] = cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
+            md.stm[ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
+#            md.stm[ii*md.pp1+jj] = cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
 #            with gil:
 #                print 'stm', ii, jj, md.stm[ii*md.pp1+jj], temp1
 
     # Local to potential
     temp1 = math.exp( cheb.barycentricInt(1., &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) - funvalsExpEval0[0] )
     for jj in range(md.pp1):
-#        md.ltp0[jj] = temp1*cheb.lagrangePolInt(-1., jj, chebRts, md.pp1)
-        md.ltp0[jj] = cheb.lagrangePolInt(-1., jj, chebRts, md.pp1)
+        md.ltp0[jj] = temp1*cheb.lagrangePolInt(-1., jj, chebRts, md.pp1)
+#        md.ltp0[jj] = cheb.lagrangePolInt(-1., jj, chebRts, md.pp1)
     for ii in range(md.ss):
         temp0 = 2.*(ii+1)/md.ss-1.
         temp1 = math.exp( cheb.barycentricInt(-temp0, &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) - funvalsExpEval0[0])
         for jj in range(md.pp1):
-#            md.ltp[ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
-            md.ltp[ii*md.pp1+jj] = cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
+            md.ltp[ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
+#            md.ltp[ii*md.pp1+jj] = cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
 #            with gil:
 #                print 'ltp', ii, jj, md.ltp[ii*md.pp1+jj], temp1
-                
+
     # Moment to local coefficients
     for ll in range(md.nlevs):
         for ii in range(md.pp1):
             for jj in range(md.pp1):
                 temp0 = md.kl[md.nlevs-ll]*(2.+0.5*(chebRts[jj]-chebRts[ii]))*md.ss*pl.stepSize
                 kFL(&temp0, kFLP, &temp1)
-#                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] - 
-#                                                               funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
+                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] - 
+                                                               funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
 #                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll])
-                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1)
+#                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
+#                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1)
                 temp0 = md.kl[md.nlevs-ll]*(3.+0.5*(chebRts[jj]-chebRts[ii]))*md.ss*pl.stepSize
                 kFL(&temp0, kFLP, &temp1)
-#                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] - 
-#                                                                   funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
+                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] - 
+                                                                   funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
 #                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll])
-                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1)                                                                   
+#                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
+#                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1)                                                                   
 #                with gil:
 #                    print 'mtl', ll, ii, jj, md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj], md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj]
 
