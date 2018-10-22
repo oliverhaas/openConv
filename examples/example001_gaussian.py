@@ -14,20 +14,20 @@ import matplotlib.pyplot as mpl
 order = 3
 orderM1Half = int((order-1)/2)
 
-nData = 2000
+nData = 40
 xMaxData = 8.
-sigData = 1.8
+sigData = 1.1
 stepSize = xMaxData/(nData-1)
 xData = np.linspace(-orderM1Half*stepSize, orderM1Half*stepSize+xMaxData, nData+2*orderM1Half)
 data = np.exp(-0.5*xData**2/sigData**2)
-data[:] = 0.
-data[orderM1Half+nData-1] = 1.
+#data[:] = 0.
+#data[orderM1Half+nData-1] = 1.
 
 # Kernel
 sigKernel = 0.6
 def kern(xx):
     return np.exp(-0.5*xx**2/sigKernel**2)
-nKernel = 1000
+nKernel = 100
 
 
 # Parameters and output result
@@ -55,20 +55,22 @@ result = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
 convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 1, order = order)    
 result2 = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
 
-convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 2, order = order)    
-result3 = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
-#result3 = result2
+#convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 2, order = order)    
+#result3 = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
 
-convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 3, order = order)    
-result4 = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
+#convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 3, order = order)    
+#result4 = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
+
+convObj = oc.Conv(nData, 2, kern, None, 2, stepSize, nResult, method = 4, order = order)    
+result5 = convObj.execute(data, leftBoundary = 3, rightBoundary = 3)
 
 mpl.figure()
 #mpl.plot(xData, data, label='data')
 #mpl.plot(xKernel, kernel, label='kernel')
 mpl.plot(xResult, result, label='trap')
-#mpl.plot(xResult, result2, label='fft')
-mpl.plot(xResult, result3, 'r:', label='fmmCheb')
-mpl.plot(xResult, result4, 'g--', label='fmmExpCheb')
+mpl.plot(xResult, result2, label='fft')
+#mpl.plot(xResult, result3, 'r:', label='fmmCheb')
+#mpl.plot(xResult, result4, 'g--', label='fmmExpCheb')
 #mpl.plot(xResult, resultAna)
 mpl.legend()
 
@@ -76,9 +78,10 @@ mpl.figure()
 #mpl.semilogy(xData, data, label='data')
 #mpl.semilogy(xKernel, kernel, label='kernel')
 mpl.semilogy(xResult, result, label='trap')
-#mpl.semilogy(xResult, result2, label='fft')
-mpl.semilogy(xResult, result3, label='fmmCheb')
-mpl.semilogy(xResult, result4, label='fmmExpCheb')
+mpl.semilogy(xResult, result2, label='fft')
+mpl.semilogy(xResult, result5, label='fftExp')
+#mpl.semilogy(xResult, result3, label='fmmCheb')
+#mpl.semilogy(xResult, result4, label='fmmExpCheb')
 #mpl.semilogy(xResult, resultAna)
 mpl.legend()
 
@@ -90,10 +93,11 @@ mpl.legend()
 #mpl.legend()
 
 mpl.figure()
-mpl.semilogy(xResult[:-1], np.clip(np.abs((result3[:-1]-result[:-1])/result[:-1]),1.e-17,np.inf), label='fmmCheb')
-mpl.semilogy(xResult[:-1], np.clip(np.abs((result4[:-1]-result[:-1])/result[:-1]),1.e-17,np.inf), label='fmmExpCheb')
-#mpl.semilogy(xResult[:-1], np.abs((result[:-1]-resultAna[:-1])/resultAna[:-1]))
-#mpl.semilogy(xResult[:-1], np.abs((result2[:-1]-resultAna[:-1])/resultAna[:-1]))
+#mpl.semilogy(xResult[:-1], np.clip(np.abs((result3[:-1]-result[:-1])/result[:-1]),1.e-17,np.inf), label='fmmCheb')
+#mpl.semilogy(xResult[:-1], np.clip(np.abs((result4[:-1]-result[:-1])/result[:-1]),1.e-17,np.inf), label='fmmExpCheb')
+mpl.semilogy(xResult[:-1], np.clip(np.abs((result[:-1]-resultAna[:-1])/resultAna[:-1]),1.e-17,np.inf), label='trap')
+mpl.semilogy(xResult[:-1], np.clip(np.abs((result2[:-1]-resultAna[:-1])/resultAna[:-1]),1.e-17,np.inf), label='fft')
+mpl.semilogy(xResult[:-1], np.clip(np.abs((result5[:-1]-resultAna[:-1])/resultAna[:-1]),1.e-17,np.inf), label='fftExp')
 #mpl.semilogy(xResult[:-1], np.abs((result3[:-1]-resultAna[:-1])/resultAna[:-1]))
 #mpl.semilogy(xResult[:-1], np.abs((result4[:-1]-resultAna[:-1])/resultAna[:-1]))
 mpl.legend()
