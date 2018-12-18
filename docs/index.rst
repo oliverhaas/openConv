@@ -1,7 +1,7 @@
 
 
 
-Welcome to openAbel's documentation!
+Welcome to openConv's documentation!
 ====================================
 
 Start by having a look at the :doc:`README <readmeLink>`, at the
@@ -15,7 +15,7 @@ Start by having a look at the :doc:`README <readmeLink>`, at the
    :maxdepth: 2
    
    readmeLink
-   transformMethods
+   convolutionMethods
    examples
 
 

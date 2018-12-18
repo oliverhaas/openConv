@@ -11,7 +11,7 @@ openConv README
     :alt: Documentation Status
 
 **Note:** It's best to view this readme in the 
-`openConv documentation <https://openconv.readthedocs.io/en/latest/index.html>`_.
+**openConv** `documentation <https://openconv.readthedocs.io/en/latest/index.html>`_.
 
 
 
@@ -20,7 +20,7 @@ Introduction
 
 
 The main goal of **openConv** is to provide fast and efficient numerical convolutions of symmetric
-and smooth kernels and data of equispaced data from smooth functions in Python with all actual calculations done in Cython. 
+and smooth kernels and data of equispaced data in Python with all actual calculations done in Cython. 
 The most useful methods implemented in my module for that purpose use the Fast Multipole Method combined with
 arbitrary order end correction of the trapezoidal rule to achieve both fast convergence and linear run time. Other methods are implemented
 for comparisons.
@@ -71,8 +71,8 @@ Issues
 --------------
 
 
-If there are any issues, bugs or feature request just let me know. As of now there are some gaps in the implementation, e.g.
-not all convolution symmetry types are available in all methods, but can be added if requested.
+In contrast to other codes I made available, **openConv** has as of now only very specific use-cases I actually implemented and/or debugged. I strongly recommend every user to thourougly check if the methods work as intended for their specific problem. For most people **openConv** will thus not be a useable code as is, but more a starting point or inspriration for their own code.
+If there are any issues, bugs or feature request just let me know. Gaps in the implementation might be filled by me if requested.
 
 
 
@@ -80,20 +80,8 @@ Transform Methods
 --------------
 
 
-The convolution integral in one dimension is defined as
-
-<a href="https://www.codecogs.com/eqnedit.php?latex(f*g)(t)=\int_{-\infty}^{\infty}f(\tau)g(t-\tau)d\tau" target="_blank">
-<img src="https://latex.codecogs.com/gif.latex?(f*g)(t)=\int_{-\infty}^{\infty}f(\tau)g(t-\tau)d\tau" title="Convolution Integral" /></a>
-
-and the discrete equivalent (which implies uniformly discretized data and kernel)
-
-<a href="https://www.codecogs.com/eqnedit.php?latex(f*g)[n]=\sum_{m=-\infty}^{\infty}f[m]g[n-m]" target="_blank">
-<img src="https://latex.codecogs.com/gif.latex?(f*g)[n]=\sum_{m=-\infty}^{\infty}f[m]g[n-m]" title="Convolution Discrete" /></a>
-
-Since both f and g often have some kind of symmetry around 0, **openConv** deals only with that case.
-
 It is fairly common to use directly the discrete convolution to approximate the convolution integral, often with smaller
-improvements like using trapezoidal rule instead of rectangle rule as above. This yields usually neither good order of convergence
+improvements like using trapezoidal rule instead of rectangle rule. This yields usually neither good order of convergence
 (second order with trapezoidal rule), nor fast calculation (quadratic *O(N^2)* computational complexity).
 
 One option instead of direct calculation is the use of an Fast Fourier Transform (FFT) based convolution, or often called

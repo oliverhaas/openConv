@@ -1,5 +1,7 @@
 
 
+import datetime
+
 from libc.stdlib cimport malloc, calloc, free
 from libc.string cimport memset
 
@@ -52,7 +54,10 @@ cdef int plan_conv_fmmCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kernelF
     if NULL == pl:
         with gil:
             raise ValueError('Illegal input argument; plan is NULL.')   
-
+    if pl.nData < 4:
+        with gil:
+            raise ValueError('Not enough data points for method.')   
+            
     # Main method struct
     md = <methodData_fmmCheb*> malloc(sizeof(methodData_fmmCheb))
     if NULL == md:
@@ -100,7 +105,7 @@ cdef int plan_conv_fmmCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kernelF
         temp0 *= 0.5
         md.pp1 = max(md.pp1, cheb.estimateOrderCheb(md.kernelFun, md.kernelFunPar, temp0*0.25, temp0*0.75, eps, 20, nMax = 200))
         md.pp1 = max(md.pp1, cheb.estimateOrderCheb(md.kernelFun, md.kernelFunPar, temp0*0.5, temp0, eps, 20, nMax = 200))
-    md.pp = max(3, md.pp1-1)
+    md.pp = max(2, md.pp1-1)
     md.pp1 = md.pp + 1
     md.nlevs = max(<int> ( math.log2((pl.nDataOut-1.)/(2.*md.pp)) + 1. ), 2)
     md.ss = max(<int> ( (pl.nDataOut-1.)/2**md.nlevs + 1. ), 3)                              # ss ~= 2*pp theoretical
@@ -128,12 +133,6 @@ cdef int plan_conv_fmmCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kernelF
         md.kl[ii] = 2**(md.nlevs-ii)
         md.klCum[ii] = md.klCum[ii-1] + md.kl[ii-1]
     cheb.chebRoots(md.pp1, md.chebRoots)
-
-    # TESTING
-    with gil:
-        print 'general', md.ss, md.pp1, md.nlevs
-#        for ii in range(md.pp1):
-#            print 'chebRts', ii, chebRts[ii]
 
     # Moment to moment coefficients
     for ii in range(md.pp1):
@@ -218,25 +217,25 @@ cdef int execute_conv_fmmCheb(conv_plan* pl, double* dataIn, double* dataOut) no
             blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
                        &moments[(kk+md.klCum[ll]+2)*md.pp1], &ONE, &ZEROD, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
                        
-#        # Left kernel right axis
-#        for kk in range(3, md.kl[ll], 2):   # If odd
-#            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-#                       &moments[(kk+md.klCum[ll]-2)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
-#            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
-#                       &moments[(kk+md.klCum[ll]-3)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
-#        for kk in range(2, md.kl[ll], 2):   # If even    
-#            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-#                       &moments[(kk+md.klCum[ll]-2)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
-#                       
-#        # Left kernel left axis
-#        # If even (kk = 0)
-#        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-#                   &moments[(md.klCum[ll]+1)*md.pp1], &MONE, &ONED, &local[md.klCum[ll]*md.pp1], &ONE)
-#        # If odd (kk = 1)
-#        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-#                   &moments[md.klCum[ll]*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+1)*md.pp1], &ONE)
-#        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
-#                   &moments[(md.klCum[ll]+1)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+1)*md.pp1], &ONE) 
+        # Left kernel right axis
+        for kk in range(3, md.kl[ll], 2):   # If odd
+            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                       &moments[(kk+md.klCum[ll]-2)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
+            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
+                       &moments[(kk+md.klCum[ll]-3)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
+        for kk in range(2, md.kl[ll], 2):   # If even    
+            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                       &moments[(kk+md.klCum[ll]-2)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
+                       
+        # Left kernel left axis
+        # If even (kk = 0)
+        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                   &moments[(md.klCum[ll]+1)*md.pp1], &MONE, &ONED, &local[md.klCum[ll]*md.pp1], &ONE)
+        # If odd (kk = 1)
+        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                   &moments[md.klCum[ll]*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+1)*md.pp1], &ONE)
+        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
+                   &moments[(md.klCum[ll]+1)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+1)*md.pp1], &ONE) 
 
     # Downward Pass / Local to local
     mm = 2*md.pp1
@@ -266,21 +265,21 @@ cdef int execute_conv_fmmCheb(conv_plan* pl, double* dataIn, double* dataOut) no
         for jj in range(mm):
             dataOut[ii] += signKernel*pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+ii+jj]
 
-    for jj in range(1, 2*md.ss+1):
+    for jj in range(1, min(2*md.ss+1,pl.nData)):
         dataOut[0] += signKernel*pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+jj]
     dataOut[0] += (signData+signKernel)*0.5*pl.kernel[orderM1Half]*dataIn[orderM1Half]
     
-#    for ii in range(1,pl.nDataOut):
-#        kk = (ii-1)/md.ss
-#        mm = ii-(kk-1)*md.ss
-#        for jj in range(max(1,1+ii-pl.nData),min(mm,ii)):
-#            dataOut[ii] += pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+ii-jj]
+    for ii in range(1,pl.nDataOut):
+        kk = (ii-1)/md.ss
+        mm = ii-(kk-1)*md.ss
+        for jj in range(max(1,1+ii-pl.nData),min(mm,ii)):
+            dataOut[ii] += pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+ii-jj]
 
-#    for ii in range(md.ss+1):
-#         for jj in range(1,md.ss+1):
-#            dataOut[ii] += signData*pl.kernel[orderM1Half+ii+jj]*dataIn[orderM1Half+jj]
-#    for ii in range(1,pl.nDataOut):
-#        dataOut[ii] += (1.+signData)*0.5*pl.kernel[orderM1Half+ii]*dataIn[orderM1Half]
+    for ii in range(min(md.ss+1,max(pl.nKernel-pl.nData,pl.nKernel-md.ss-1))):
+         for jj in range(1,min(md.ss+1,pl.nData)):
+            dataOut[ii] += signData*pl.kernel[orderM1Half+ii+jj]*dataIn[orderM1Half+jj]
+    for ii in range(1,pl.nDataOut):
+        dataOut[ii] += (1.+signData)*0.5*pl.kernel[orderM1Half+ii]*dataIn[orderM1Half]
 
     return 0
 
@@ -330,6 +329,7 @@ ctypedef struct methodData_fmmExpCheb:
     double* ltp0
     double* mtl
     double* stm
+    double* stm0
     double* ltlp
     double* ltlm
     int pp
@@ -340,17 +340,16 @@ ctypedef struct methodData_fmmExpCheb:
 
 
 # Plan FMM
-cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kernelFunPar = NULL, double eps = 1.e-15) nogil except -1:
+cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kernelFunPar = NULL, 
+                              double eps = 1.e3*const.machineEpsilon) nogil except -1:
 
     cdef:
         methodData_fmmExpCheb* md = NULL
         double temp0, temp1, ti, tauj
-        int orderM1Half#, positiveWarnFlag = 0
+        int orderM1Half, positiveWarnFlag = 0
         int ii, jj, kk, ll
         double* tempArray0 = NULL
-        double* funvalsExp = NULL
-        double* funvalsExpEval = NULL
-        double* funvalsExpEval0 = NULL
+        double* kernelLog = NULL
         kernelFunCombinerStruct kFCS
 
         interp.Interpolator* kI = NULL
@@ -359,17 +358,19 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         funPtr kFL = NULL
         void* kFLP = NULL
         kernelFunLogHelperStruct kFLHS
-        int ppExp
-        int pp1Exp
-        double* chebRtsExp = NULL
-        double* chebWghtsExp = NULL
         double* chebRts = NULL
+        double lam, epsInc
 
     # Input check
     if NULL == pl:
         with gil:
-            raise ValueError('Illegal input argument; plan is NULL.')   
-
+            raise ValueError('Illegal input argument; plan is NULL.')
+    eps = max(min(eps, 1.e-3), const.machineEpsilon)
+    orderM1Half = <int> ((pl.order-1)/2)
+    if pl.nData < 4:
+        with gil:
+            raise ValueError('Not enough data points for method.')   
+            
     # Main method struct
     md = <methodData_fmmExpCheb*> malloc(sizeof(methodData_fmmExpCheb))
     if NULL == md:
@@ -393,29 +394,36 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         with gil:
             raise NotImplementedError('Not implemented (yet).')
 
-    # Helper stuff
-    orderM1Half = <int> ((pl.order-1)/2)
+    # Check if kernel is compatible
+    kk = pl.nKernel+2*orderM1Half
+    for ii in range(pl.nKernel+2*orderM1Half):
+        if pl.kernel[ii] <= 0.:
+            kk = ii
+            break
+    if kk < 20:
+        with gil:
+            raise ValueError('Either kernel resolution is not sufficient or input is negative kernel. \
+                              Not enough non-zero values to estimate asymptotic exponential scaling. ')
     
-#    # TODO NEEDED?
-#    # Check if kernel is all positive
-#    for ii in range(pl.nKernel+2*orderM1Half):
-#        if pl.kernel[ii] <= 0. and positiveWarnFlag == 0:
-#            positiveWarnFlag = 1
-#            with gil:
-#                print 'WARNING: Kernel not all positive, will be forced to be all positive. Further warnings of this type will be ' \
-#                       + 'supressed.'
-#            pl.kernel[ii] = const.doubleMin
-
-    # Handling of kernel function
+    # Take care of log-scale kernel values and estimate rough exponential asymptotic scaling
+    kernelLog = <double*> malloc((pl.nKernel+2*orderM1Half)*sizeof(double))
+    for ii in range(kk):
+        kernelLog[ii] = math.log(pl.kernel[ii])
+    jj = <int> (0.8*kk)
+    _linReg(&kernelLog[jj], kk-jj, &temp0, &temp1)
+    lam = -temp1/pl.stepSize
+    if lam < 0.:
+        with gil:
+            raise ValueError('Asymptotic scaling seems not to be decaying exponentially.')            
+    for ii in range(kk, pl.nKernel+2*orderM1Half):
+        kernelLog[ii] = kernelLog[kk-1] - lam*pl.stepSize*(ii-kk+1)
+    
+    # Further handling of kernel function
     if NULL == kernelFun:
         # Interpolate in log scale since function assumed to be somewhat exponential
-        tempArray0 = <double*> malloc((pl.nKernel+2*orderM1Half)*sizeof(double))
-        for ii in range(pl.nKernel+2*orderM1Half):
-            tempArray0[ii] = math.log(pl.kernel[ii])
-        kI = interp.Newton1D1DEquiFromData(tempArray0, (pl.shiftKernel-orderM1Half)*pl.stepSize, 
+        kI = interp.Newton1D1DEquiFromData(kernelLog, (pl.shiftKernel-orderM1Half)*pl.stepSize, 
                                            (pl.nKernel+pl.shiftKernel+orderM1Half)*pl.stepSize, pl.nKernel+2*orderM1Half, 
                                            degree = max(pl.order-1,1))
-        free(tempArray0)
         kF = &kernelFunExpHelper
         kFP = <void*> kI
         kFL = &kernelFunHelper
@@ -428,93 +436,70 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         kFL = &kernelFunLogHelper
         kFLP = <void*> &kFLHS
     
-    # Hierarchical decomposition
     # Calculate needed order for desired precision
-    md.nlevs = max(<int> ( math.log2((pl.nDataOut-1.)/6.) + 1. ), 2) # Only for rough estimate to check
-    
-    # Log scale
-    pp1Exp = 0
+    md.nlevs = max(<int> ( math.log2((pl.nDataOut-1.)/4.) + 1. ), 2) # Maximal estimate just to check
+    md.pp1 = 3
     temp0 = 2.*pl.stepSize*(pl.nKernel+pl.shiftKernel-1)
-    kk = 20
-    for ii in range(md.nlevs):
-        temp0 *= 0.5
-        pp1Exp = max(pp1Exp, 
-                     cheb.estimateOrderCheb(kFL, kFLP, temp0*0.375, temp0*0.625, eps, kk, nMax = 200),
-                     cheb.estimateOrderCheb(kFL, kFLP, temp0*0.625, temp0*0.875, eps, kk, nMax = 200))
-    ppExp = 5#max(2, pp1Exp-1)
-    pp1Exp = ppExp + 1
-    
-    chebRtsExp = <double*> malloc(pp1Exp*sizeof(double))
-    chebWghtsExp = <double*> malloc(pp1Exp*sizeof(double))
-    if (NULL == chebRtsExp or NULL == chebRtsExp):
-        free(chebRtsExp)
-        free(chebWghtsExp)
-        destroy_conv_fmmExpCheb(pl)
-        with gil:        
-            raise MemoryError('Malloc ruturned a NULL pointer, probably not enough memory available.')
-    cheb.chebRoots(pp1Exp, chebRtsExp)
-    cheb.chebWeights(pp1Exp, chebWghtsExp)
-    
-    # Normal scale
-    md.pp1 = max(2*pp1Exp,5)
-    temp0 = 2.*pl.stepSize*(pl.nKernel+pl.shiftKernel-1)
-    kk = max(2*pp1Exp,5)
-    kFCS.funvals = <double*> malloc(pp1Exp*sizeof(double))
-    kFCS.pp1Exp = pp1Exp
     kFCS.kernelFunLog = kFL
     kFCS.kernelFunLogPar = kFLP
-    kFCS.chebRtsExp = chebRtsExp
-    kFCS.chebWghtsExp = chebWghtsExp
+    kFCS.lam = lam
+    temp1 = max(1.e3*const.machineEpsilon, eps)
     for ii in range(md.nlevs):
         temp0 *= 0.5
         kFCS.delta = 0.125*temp0
         kFCS.tMeanMTauMean = 0.5*temp0
         for jj in range(-1,2,1):
             kFCS.tp = jj
-            for ll in range(pp1Exp):
-                temp1 = kFCS.tMeanMTauMean + kFCS.delta*chebRtsExp[ll]
-                kFL(&temp1, kFLP, &kFCS.funvals[ll])
-            md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., eps, kk, nMax = 200))
+            md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., temp1, 30, nMax = 100))
         kFCS.tMeanMTauMean = 0.75*temp0
         for jj in range(-1,2,1):
             kFCS.tp = jj
-            for ll in range(pp1Exp):
-                temp1 = kFCS.tMeanMTauMean + kFCS.delta*chebRtsExp[ll]
-                kFL(&temp1, kFLP, &kFCS.funvals[ll])
-            md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., eps, kk, nMax = 200))
-    free(kFCS.funvals)
-
-    md.pp = max(3, md.pp1-1)
+            md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., temp1, 30, nMax = 100))
+    
+    for ii in range(pl.nKernel+2*orderM1Half):
+        kernelLog[ii] += ii*pl.stepSize*lam
+    kk = 2
+    epsInc = const.doubleMax
+    for ii in range(md.nlevs):
+        if pl.nKernel-2*kk <= 0:
+            break
+        epsInc = min( epsInc, _min(&kernelLog[orderM1Half+kk], min(2*kk,pl.nKernel-kk)) - \
+                              _max(&kernelLog[orderM1Half+kk], min(2*kk,pl.nKernel-kk)) )
+        epsInc = min( epsInc, _min(&kernelLog[orderM1Half+2*kk], min(2*kk,pl.nKernel-2*kk)) - \
+                              _max(&kernelLog[orderM1Half+2*kk], min(2*kk,pl.nKernel-2*kk)) )        
+        kk *= 2
+    epsInc = math.exp(epsInc)*eps/temp1
+    md.pp1 = <int> ((md.pp1-1)*(math.log(epsInc)/math.log(temp1)+1.) + 0.5)
+    if epsInc*temp1*1.e3 < const.machineEpsilon:
+        with gil:
+            print str(datetime.datetime.now()) + ' WARNING: Kernel can not be approximated to requested precision,' + \
+                  'probably losing ' + str((<int> math.log10(epsInc*temp1/const.machineEpsilon))) + ' orders of precision.'
+    free(kernelLog)
+        
+    # Hierarchical decomposition
+    md.pp = max(2, md.pp1-1)
     md.pp1 = md.pp + 1
     md.nlevs = max(<int> ( math.log2((pl.nDataOut-1.)/(2.*md.pp)) + 1. ), 2)
-    md.ss = max(<int> ( (pl.nDataOut-1.)/2**md.nlevs + 1. ), 3)                              # ss ~= 2*pp theoretical
-    md.kTotal = 2**(md.nlevs+1) - 1                                                       # Total number of intervals in all levels
+    md.ss = max(<int> ( (pl.nDataOut-1.)/2**md.nlevs + 1. ), 3)                 # ss ~= 2*pp theoretical
+    md.kTotal = 2**(md.nlevs+1) - 1                                             # Total number of intervals in all levels
 
     # More allocation of other arrays part
     md.kl = <int*> malloc((md.nlevs+1)*sizeof(int))
     md.klCum = <int*> malloc((md.nlevs+1)*sizeof(int))
-    md.mtmp = <double*> malloc(md.nlevs*md.pp1**2*sizeof(double))
-    md.mtmm = <double*> malloc(md.nlevs*md.pp1**2*sizeof(double))
-    md.ltp = <double*> malloc(md.pp1*md.ss*sizeof(double))
-    md.ltp0 = <double*> malloc(md.pp1*sizeof(double))
+    md.mtmp = <double*> calloc(md.nlevs*md.pp1**2, sizeof(double))
+    md.mtmm = <double*> calloc(md.nlevs*md.pp1**2, sizeof(double))
+    md.ltp = <double*> calloc(md.pp1*md.ss, sizeof(double))
+    md.ltp0 = <double*> calloc(md.pp1, sizeof(double))
     md.mtl = <double*> calloc(2*md.nlevs*md.pp1**2, sizeof(double))
-    md.stm = <double*> malloc(md.pp1*md.ss*sizeof(double))
-    md.ltlp = <double*> malloc(md.nlevs*md.pp1**2*sizeof(double))
-    md.ltlm = <double*> malloc(md.nlevs*md.pp1**2*sizeof(double))
+    md.stm = <double*> calloc(md.pp1*md.ss, sizeof(double))
+    md.stm0 = <double*> calloc(md.pp1, sizeof(double))
+    md.ltlp = <double*> calloc(md.nlevs*md.pp1**2, sizeof(double))
+    md.ltlm = <double*> calloc(md.nlevs*md.pp1**2, sizeof(double))
     
     chebRts = <double*> malloc(md.pp1*sizeof(double))
     
-    funvalsExpEval = <double*> malloc(3*2*md.nlevs*md.pp1*sizeof(double))
-    funvalsExpEval0 = <double*> malloc(2*md.nlevs*sizeof(double))
-    funvalsExp = <double*> malloc(2*md.nlevs*pp1Exp*sizeof(double))
-    
     if (NULL == md.kl or NULL == md.klCum or NULL == md.mtmp or NULL == md.mtmm or NULL == md.ltp or NULL == md.ltp0 or 
-        NULL == md.mtl or NULL == md.ltlp or NULL == md.ltlm or
-        NULL == chebRts or
-        NULL == funvalsExpEval or NULL == funvalsExp or NULL == funvalsExpEval0):
-        free(funvalsExpEval)
-        free(funvalsExpEval0)
-        free(funvalsExp)
+        NULL == md.mtl or NULL == chebRts or NULL == md.ltlp or NULL == md.ltlm or NULL == md.stm0):
         destroy_conv_fmmExpCheb(pl)
         with gil:        
             raise MemoryError('Malloc ruturned a NULL pointer, probably not enough memory available.')
@@ -527,102 +512,63 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         md.klCum[ii] = md.klCum[ii-1] + md.kl[ii-1]
     cheb.chebRoots(md.pp1, chebRts)
 
-    # TESTING
-    with gil:
-        print 'general', md.ss, md.pp1, pp1Exp, md.nlevs
-#        for ii in range(md.pp1):
-#            print 'chebRts', ii, chebRts[ii]
-    # Exp part preperation
-    for ll in range(md.nlevs):
-        for ii in range(pp1Exp):
-            temp0 = md.kl[md.nlevs-ll]*(2.+0.5*chebRtsExp[ii])*md.ss*pl.stepSize
-            kFL(&temp0, kFLP, &funvalsExp[2*ll*pp1Exp+ii])
-        funvalsExpEval0[2*ll] = cheb.barycentricInt(0., &funvalsExp[2*ll*pp1Exp], chebRtsExp, chebWghtsExp, pp1Exp)
-        for ii in range(md.pp1):
-            # These are needed for the moment to local coefficients mainly
-            funvalsExpEval[2*ll*md.pp1+ii] = cheb.barycentricInt(chebRts[ii], &funvalsExp[2*ll*pp1Exp], chebRtsExp, 
-                                                                 chebWghtsExp, pp1Exp)
-            # And these for the moment to moment and local to local coefficients
-            funvalsExpEval[2*md.nlevs*md.pp1+2*ll*md.pp1+ii] = cheb.barycentricInt(0.5*chebRts[ii]-0.5, &funvalsExp[2*ll*pp1Exp],
-                                                                                   chebRtsExp, chebWghtsExp, pp1Exp)
-            funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+ii] = cheb.barycentricInt(0.5*chebRts[ii]+0.5, &funvalsExp[2*ll*pp1Exp],
-                                                                                       chebRtsExp, chebWghtsExp, pp1Exp)
-            funvalsExpEval[4*md.nlevs*md.pp1+2*ll*md.pp1+ii] = cheb.barycentricInt(2.*chebRts[ii]-1., &funvalsExp[2*ll*pp1Exp],
-                                                                                   chebRtsExp, chebWghtsExp, pp1Exp)
-            funvalsExpEval[4*md.nlevs*md.pp1+(2*ll+1)*md.pp1+ii] = cheb.barycentricInt(2.*chebRts[ii]+1., &funvalsExp[2*ll*pp1Exp],
-                                                                                       chebRtsExp, chebWghtsExp, pp1Exp)
-        for ii in range(pp1Exp):
-            temp0 = md.kl[md.nlevs-ll]*(3.+0.5*chebRtsExp[ii])*md.ss*pl.stepSize
-            kFL(&temp0, kFLP, &funvalsExp[(2*ll+1)*pp1Exp+ii])
-        
-        funvalsExpEval0[(2*ll+1)] = cheb.barycentricInt(0., &funvalsExp[(2*ll+1)*pp1Exp], chebRtsExp, chebWghtsExp, pp1Exp)
-        for ii in range(md.pp1):
-            # Again for the moment to local coefficients mainly
-            funvalsExpEval[(2*ll+1)*md.pp1+ii] = cheb.barycentricInt(chebRts[ii], &funvalsExp[(2*ll+1)*pp1Exp], chebRtsExp,
-                                                                     chebWghtsExp, pp1Exp)
-            # The other funvalsExpEval which are above we drop because we center the expansion of the moments around the closer interval
-            
     # Moment to moment
     for ll in range(1,md.nlevs):
         for ii in range(md.pp1):
             for jj in range(md.pp1):
-#                temp0 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+jj] - funvalsExpEval[2*(ll-1)*md.pp1+jj] )
-#                temp1 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+2*ll*md.pp1+jj] - funvalsExpEval[2*(ll-1)*md.pp1+jj] )
-                temp0 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+(2*ll+1)*md.pp1+jj] - funvalsExpEval0[2*ll] - 
-                                  funvalsExpEval[2*(ll-1)*md.pp1+jj] + funvalsExpEval0[2*(ll-1)] )
-                temp1 = math.exp( funvalsExpEval[2*md.nlevs*md.pp1+2*ll*md.pp1+jj] - funvalsExpEval0[2*ll] - 
-                                  funvalsExpEval[2*(ll-1)*md.pp1+jj] + funvalsExpEval0[2*(ll-1)] )
-                md.mtmp[ll*md.pp1**2+ii*md.pp1+jj] = temp0*cheb.lagrangePolInt(0.5*chebRts[jj]+0.5, ii, chebRts, md.pp1)
-                md.mtmm[ll*md.pp1**2+ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(0.5*chebRts[jj]-0.5, ii, chebRts, md.pp1)
+                temp0 = math.exp( md.kl[md.nlevs+1-ll]*0.5*pl.stepSize*md.ss*lam +
+                                  md.kl[md.nlevs+1-ll]*0.5*chebRts[jj]*md.ss*pl.stepSize*lam -
+                                  md.kl[md.nlevs-ll]*0.5*chebRts[ii]*md.ss*pl.stepSize*lam )
+                temp1 = math.exp( -md.kl[md.nlevs+1-ll]*0.5*pl.stepSize*md.ss*lam + 
+                                  md.kl[md.nlevs+1-ll]*0.5*chebRts[jj]*md.ss*pl.stepSize*lam -
+                                  md.kl[md.nlevs-ll]*0.5*chebRts[ii]*md.ss*pl.stepSize*lam )
+                md.mtmp[ll*md.pp1**2+ii*md.pp1+jj] = cheb.lagrangePolInt(0.5*chebRts[jj]+0.5, ii, chebRts, md.pp1)*temp0
+                md.mtmm[ll*md.pp1**2+ii*md.pp1+jj] = cheb.lagrangePolInt(0.5*chebRts[jj]-0.5, ii, chebRts, md.pp1)*temp1
                 
     # Local to local
     for ll in range(1,md.nlevs):
         for ii in range(md.pp1):
             for jj in range(md.pp1):
-                temp0 = math.exp( funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] - funvalsExpEval0[2*ll] -
-                                  funvalsExpEval[4*md.nlevs*md.pp1+(2*(ll-1)+1)*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*(ll-1)] )
-                temp1 = math.exp( funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] - funvalsExpEval0[2*ll] -
-                                  funvalsExpEval[4*md.nlevs*md.pp1+2*(ll-1)*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*(ll-1)] )
-                md.ltlp[ll*md.pp1**2+ii*md.pp1+jj] = temp0*cheb.lagrangePolInt(0.5*chebRts[jj]+0.5, ii, chebRts, md.pp1)
-                md.ltlm[ll*md.pp1**2+ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(0.5*chebRts[jj]-0.5, ii, chebRts, md.pp1)
+                temp0 = math.exp( -md.kl[md.nlevs+1-ll]*0.5*pl.stepSize*md.ss*lam - 
+                                  md.kl[md.nlevs+1-ll]*0.5*chebRts[jj]*md.ss*pl.stepSize*lam +
+                                  md.kl[md.nlevs-ll]*0.5*chebRts[ii]*md.ss*pl.stepSize*lam )
+                temp1 = math.exp( md.kl[md.nlevs+1-ll]*0.5*pl.stepSize*md.ss*lam -
+                                  md.kl[md.nlevs+1-ll]*0.5*chebRts[jj]*md.ss*pl.stepSize*lam +
+                                  md.kl[md.nlevs-ll]*0.5*chebRts[ii]*md.ss*pl.stepSize*lam )
+                md.ltlp[ll*md.pp1**2+ii*md.pp1+jj] = cheb.lagrangePolInt(0.5*chebRts[jj]+0.5, ii, chebRts, md.pp1)*temp0
+                md.ltlm[ll*md.pp1**2+ii*md.pp1+jj] = cheb.lagrangePolInt(0.5*chebRts[jj]-0.5, ii, chebRts, md.pp1)*temp1
 
     # Source to moment
+    for jj in range(md.pp1):
+        temp1 = math.exp( -(md.ss/2.)*pl.stepSize*lam - 0.5*chebRts[jj]*md.ss*pl.stepSize*lam  )
+        md.stm0[jj] = temp1*cheb.lagrangePolInt(-1., jj, chebRts, md.pp1)
     for ii in range(md.ss):
         temp0 = 2.*(ii+1)/md.ss-1.
-        temp1 = math.exp( cheb.barycentricInt(temp0, &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) - funvalsExpEval0[0] )
         for jj in range(md.pp1):
-            md.stm[ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
+            temp1 = math.exp( (ii+1.-md.ss/2.)*pl.stepSize*lam - 0.5*chebRts[jj]*md.ss*pl.stepSize*lam )
+            md.stm[ii*md.pp1+jj] = cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)*temp1
 
     # Local to potential
-    temp1 = math.exp( cheb.barycentricInt(1., &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) - funvalsExpEval0[0] )
     for jj in range(md.pp1):
+        temp1 = math.exp( (md.ss/2.)*pl.stepSize*lam + 0.5*chebRts[jj]*md.ss*pl.stepSize*lam  )
         md.ltp0[jj] = temp1*cheb.lagrangePolInt(-1., jj, chebRts, md.pp1)
     for ii in range(md.ss):
         temp0 = 2.*(ii+1)/md.ss-1.
-        temp1 = math.exp( cheb.barycentricInt(-temp0, &funvalsExp[0], chebRtsExp, chebWghtsExp, pp1Exp) - funvalsExpEval0[0])
         for jj in range(md.pp1):
-            md.ltp[ii*md.pp1+jj] = temp1*cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)
+            temp1 = math.exp( -(ii+1.-md.ss/2.)*pl.stepSize*lam + 0.5*chebRts[jj]*md.ss*pl.stepSize*lam )
+            md.ltp[ii*md.pp1+jj] = cheb.lagrangePolInt(temp0, jj, chebRts, md.pp1)*temp1
 
     # Moment to local coefficients
     for ll in range(md.nlevs):
         for ii in range(md.pp1):
             for jj in range(md.pp1):
                 temp0 = md.kl[md.nlevs-ll]*(2.+0.5*(chebRts[jj]-chebRts[ii]))*md.ss*pl.stepSize
-                kFL(&temp0, kFLP, &temp1)
-                md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] - 
-                                                               funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
+                kF(&temp0, kFP, &md.mtl[2*ll*md.pp1**2+ii*md.pp1+jj])
                 temp0 = md.kl[md.nlevs-ll]*(3.+0.5*(chebRts[jj]-chebRts[ii]))*md.ss*pl.stepSize
-                kFL(&temp0, kFLP, &temp1)
-                md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 - funvalsExpEval[2*ll*md.pp1+jj] + funvalsExpEval0[2*ll] - 
-                                                                   funvalsExpEval[2*ll*md.pp1+md.pp1-1-ii] + funvalsExpEval0[2*ll])
-
-    free(funvalsExp)
-    free(funvalsExpEval)
-    free(funvalsExpEval0)
+                kF(&temp0, kFP, &md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj])
+                
     free(chebRts)
-    free(chebRtsExp)
-    free(chebWghtsExp)
-                            
+    
     return 0
 
 
@@ -631,7 +577,8 @@ cdef int execute_conv_fmmExpCheb(conv_plan* pl, double* dataIn, double* dataOut)
 
     cdef:
         int ii, jj, kk, ll, mm, nn
-        double* moments
+        double* moments0
+        double* moments1
         double* local
         int orderM1Half
         double temp0, signData, signKernel
@@ -646,77 +593,75 @@ cdef int execute_conv_fmmExpCheb(conv_plan* pl, double* dataIn, double* dataOut)
     signKernel = base.symSignFac(pl.symKernel)
 
     # Memory allocation
-    moments = <double*> calloc(md.kTotal*md.pp1, sizeof(double))
+    moments0 = <double*> calloc(md.kTotal*md.pp1, sizeof(double))
+    moments1 = <double*> calloc(md.kTotal*md.pp1, sizeof(double))
     local = <double*> calloc(md.kTotal*md.pp1, sizeof(double))
-    if (NULL == moments or NULL == local):
-        free(moments)
+    if (NULL == moments0 or NULL == moments1 or NULL == local):
+        free(moments0)
+        free(moments1)
         free(local)
         with gil:        
             raise MemoryError('Malloc ruturned a NULL pointer, probably not enough memory available.')
 
+    ## One exponential scaling of moments
     # Finest level moment calculation
     mm = <int> (pl.nData-2)/md.ss
     blas.dgemm('n', 'n', &md.pp1, &mm, &md.ss, &ONED, md.stm, &md.pp1, 
-               &dataIn[orderM1Half+1], &md.ss, &ZEROD, moments, &md.pp1)
+               &dataIn[orderM1Half+1], &md.ss, &ZEROD, moments0, &md.pp1)
     for ii in range(mm*md.ss+1, pl.nData):
         nn = (ii-1) - mm*md.ss
         for jj in range(md.pp1):
-            moments[mm*md.pp1+jj] += md.stm[nn*md.pp1+jj]*dataIn[orderM1Half+ii]
+            moments0[mm*md.pp1+jj] += md.stm[nn*md.pp1+jj]*dataIn[orderM1Half+ii]
 
     # Upward Pass / Moment to moment
     mm = 2*md.pp1
     for ll in range(1, md.nlevs):
         blas.dgemm('t', 'n', &md.pp1, &md.kl[ll], &md.pp1, &ONED, &md.mtmm[ll*md.pp1**2], &md.pp1, 
-                   &moments[md.klCum[ll-1]*md.pp1], &mm, &ZEROD, &moments[md.klCum[ll]*md.pp1], &md.pp1)
+                   &moments0[md.klCum[ll-1]*md.pp1], &mm, &ZEROD, &moments0[md.klCum[ll]*md.pp1], &md.pp1)
         blas.dgemm('t', 'n', &md.pp1, &md.kl[ll], &md.pp1, &ONED, &md.mtmp[ll*md.pp1**2], &md.pp1, 
-                   &moments[(md.klCum[ll-1]+1)*md.pp1], &mm, &ONED, &moments[md.klCum[ll]*md.pp1], &md.pp1)
+                   &moments0[(md.klCum[ll-1]+1)*md.pp1], &mm, &ONED, &moments0[md.klCum[ll]*md.pp1], &md.pp1)
 
+    ## Other exponential scaling of moments
+    # Finest level moment calculation
+    mm = <int> (pl.nData-2)/md.ss
+    blas.dgemm('n', 'n', &md.pp1, &mm, &md.ss, &ONED, md.ltp, &md.pp1, 
+               &dataIn[orderM1Half+1], &md.ss, &ZEROD, moments1, &md.pp1)
+    for ii in range(mm*md.ss+1, pl.nData):
+        nn = (ii-1) - mm*md.ss
+        for jj in range(md.pp1):
+            moments1[mm*md.pp1+jj] += md.ltp[nn*md.pp1+jj]*dataIn[orderM1Half+ii]
+
+    # Upward Pass / Moment to moment
+    mm = 2*md.pp1
+    for ll in range(1, md.nlevs):
+        blas.dgemm('t', 'n', &md.pp1, &md.kl[ll], &md.pp1, &ONED, &md.ltlm[ll*md.pp1**2], &md.pp1, 
+                   &moments1[md.klCum[ll-1]*md.pp1], &mm, &ZEROD, &moments1[md.klCum[ll]*md.pp1], &md.pp1)
+        blas.dgemm('t', 'n', &md.pp1, &md.kl[ll], &md.pp1, &ONED, &md.ltlp[ll*md.pp1**2], &md.pp1, 
+                   &moments1[(md.klCum[ll-1]+1)*md.pp1], &mm, &ONED, &moments1[md.klCum[ll]*md.pp1], &md.pp1)
+
+
+    ## Use the moments for one kernel side
     # Interaction Phase / Moment to local
     for ll in range(md.nlevs):
-        # Right kernel
-        for kk in range(0, md.kl[ll]-2, 2): # If even
-            blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-                       &moments[(kk+md.klCum[ll]+2)*md.pp1], &ONE, &ZEROD, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
-#            for ii in range(md.pp1):
-#                for jj in range(md.pp1):
-#                    local[(md.klCum[ll]+kk)*md.pp1+ii] += md.mtl[(2*ll)*md.pp1**2+ii*md.pp1+jj]*moments[(kk+md.klCum[ll]+2)*md.pp1+jj]
-            blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
-                       &moments[(kk+md.klCum[ll]+3)*md.pp1], &ONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
-        
-        for kk in range(1, md.kl[ll]-2, 2): # If odd     
-            blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-                       &moments[(kk+md.klCum[ll]+2)*md.pp1], &ONE, &ZEROD, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
-#        # If even
-#        for kk in range(0, md.kl[ll]-2, 2):
-#            blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtlk[(2*(md.klCum[ll]+kk))*md.pp1**2], &md.pp1, 
-#                       &moments[(kk+md.klCum[ll]+2)*md.pp1], &ONE, &ZEROD, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
-#            blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtlk[(2*(md.klCum[ll]+kk)+1)*md.pp1**2], &md.pp1, 
-#                       &moments[(kk+md.klCum[ll]+3)*md.pp1], &ONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
-#        # If odd
-#        for kk in range(1, md.kl[ll]-2, 2):
-#            blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtlk[(2*(md.klCum[ll]+kk))*md.pp1**2], &md.pp1, 
-#                       &moments[(kk+md.klCum[ll]+2)*md.pp1], &ONE, &ZEROD, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
-                                      
-#        # Left kernel right axis
-#        for kk in range(3, md.kl[ll], 2):   # If odd
-#            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-#                       &moments[(kk+md.klCum[ll]-2)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
-#            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
-#                       &moments[(kk+md.klCum[ll]-3)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
-#        for kk in range(2, md.kl[ll], 2):   # If even    
-#            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-#                       &moments[(kk+md.klCum[ll]-2)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
-#                       
-#        # Left kernel left axis
-#        # If even (kk = 0)
-#        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-#                   &moments[(md.klCum[ll]+1)*md.pp1], &MONE, &ONED, &local[md.klCum[ll]*md.pp1], &ONE)
-#        # If odd (kk = 1)
-#        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
-#                   &moments[md.klCum[ll]*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+1)*md.pp1], &ONE)
-#        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
-#                   &moments[(md.klCum[ll]+1)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+1)*md.pp1], &ONE) 
-
+        # Left kernel right axis
+        for kk in range(3, md.kl[ll], 2):   # If odd
+            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                       &moments0[(kk+md.klCum[ll]-2)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
+            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
+                       &moments0[(kk+md.klCum[ll]-3)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
+        for kk in range(2, md.kl[ll], 2):   # If even    
+            blas.dgemv('t', &md.pp1, &md.pp1, &ONED, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                       &moments0[(kk+md.klCum[ll]-2)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &MONE)
+        # Left kernel left axis
+        # If even (kk = 0)
+        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                   &moments1[(md.klCum[ll]+1)*md.pp1], &MONE, &ONED, &local[md.klCum[ll]*md.pp1], &ONE)
+        # If odd (kk = 1)
+        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                   &moments1[md.klCum[ll]*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+1)*md.pp1], &ONE)
+        blas.dgemv('n', &md.pp1, &md.pp1, &signData, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
+                   &moments1[(md.klCum[ll]+1)*md.pp1], &MONE, &ONED, &local[(md.klCum[ll]+1)*md.pp1], &ONE)  
+                                  
     # Downward Pass / Local to local
     mm = 2*md.pp1
     for ll in range(md.nlevs-1, 0, -1):
@@ -727,7 +672,6 @@ cdef int execute_conv_fmmExpCheb(conv_plan* pl, double* dataIn, double* dataOut)
 
     # Potential evaluation / local to potential
     mm = (pl.nDataOut-2)/md.ss
-#    blas.dgemm('t', 'n', &md.ss, &mm, &md.pp1, &ONED, md.ltp, &md.pp1, local, &md.pp1, &ONED, &dataOut[1], &md.ss)
     blas.dgemm('t', 'n', &md.ss, &mm, &md.pp1, &ONED, md.ltp, &md.pp1, local, &md.pp1, &ONED, &dataOut[1], &md.ss)
     for ii in range(mm*md.ss+1, pl.nDataOut):
         nn = (ii-1) - mm*md.ss
@@ -736,17 +680,41 @@ cdef int execute_conv_fmmExpCheb(conv_plan* pl, double* dataIn, double* dataOut)
     for jj in range(md.pp1):
         dataOut[0] += local[jj]*md.ltp0[jj]
 
-#    # TESTING
-#    for ii in range(pl.nDataOut):
-#        dataOut[ii] *= math.exp(ii*pl.stepSize/0.05)
-#    for ii in range(pl.nData+2*orderM1Half):
-#        dataIn[ii] *= math.exp((ii-orderM1Half)*pl.stepSize/0.05)
-##    for ii in range(pl.nDataOut):
-##        dataOut[ii] *= math.exp(0.5*(ii*pl.stepSize)**2/0.9**2)
-##    for ii in range(pl.nData+2*orderM1Half):
-##        dataIn[ii] *= math.exp(0.5*((ii-orderM1Half)*pl.stepSize)**2/0.9**2)
 
-    free(moments)
+    ## Use the moments for other kernel side
+    memset(local, 0, md.kTotal*md.pp1*sizeof(double))
+    # Interaction Phase / Moment to local
+    for ll in range(md.nlevs):
+        # Right kernel
+        for kk in range(0, md.kl[ll]-2, 2): # If even
+            blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                       &moments1[(kk+md.klCum[ll]+2)*md.pp1], &ONE, &ZEROD, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
+            blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtl[(2*ll+1)*md.pp1**2], &md.pp1, 
+                       &moments1[(kk+md.klCum[ll]+3)*md.pp1], &ONE, &ONED, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
+        for kk in range(1, md.kl[ll]-2, 2): # If odd     
+            blas.dgemv('t', &md.pp1, &md.pp1, &signKernel, &md.mtl[(2*ll)*md.pp1**2], &md.pp1, 
+                       &moments1[(kk+md.klCum[ll]+2)*md.pp1], &ONE, &ZEROD, &local[(md.klCum[ll]+kk)*md.pp1], &ONE)
+                                      
+    # Downward Pass / Local to local
+    mm = 2*md.pp1
+    for ll in range(md.nlevs-1, 0, -1):
+        blas.dgemm('n', 'n', &md.pp1, &md.kl[ll], &md.pp1, &ONED, &md.mtmm[ll*md.pp1**2], &md.pp1, 
+                   &local[md.klCum[ll]*md.pp1], &md.pp1, &ONED, &local[md.klCum[ll-1]*md.pp1], &mm)
+        blas.dgemm('n', 'n', &md.pp1, &md.kl[ll], &md.pp1, &ONED, &md.mtmp[ll*md.pp1**2], &md.pp1, 
+                   &local[md.klCum[ll]*md.pp1], &md.pp1, &ONED, &local[(md.klCum[ll-1]+1)*md.pp1], &mm)
+
+    # Potential evaluation / local to potential
+    mm = (pl.nDataOut-2)/md.ss
+    blas.dgemm('t', 'n', &md.ss, &mm, &md.pp1, &ONED, md.stm, &md.pp1, local, &md.pp1, &ONED, &dataOut[1], &md.ss)
+    for ii in range(mm*md.ss+1, pl.nDataOut):
+        nn = (ii-1) - mm*md.ss
+        for jj in range(md.pp1):
+            dataOut[ii] += md.stm[nn*md.pp1+jj]*local[mm*md.pp1+jj]
+    for jj in range(md.pp1):
+        dataOut[0] += local[jj]*md.stm0[jj]
+
+    free(moments0)
+    free(moments1)
     free(local)
     
     # Direct short range
@@ -756,22 +724,21 @@ cdef int execute_conv_fmmExpCheb(conv_plan* pl, double* dataIn, double* dataOut)
         for jj in range(mm):
             dataOut[ii] += signKernel*pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+ii+jj]
 
-    for jj in range(1, 2*md.ss+1):
+    for jj in range(1, min(2*md.ss+1,pl.nData)):
         dataOut[0] += signKernel*pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+jj]
     dataOut[0] += (signData+signKernel)*0.5*pl.kernel[orderM1Half]*dataIn[orderM1Half]
 
+    for ii in range(1,pl.nDataOut):
+        kk = (ii-1)/md.ss
+        mm = ii-(kk-1)*md.ss
+        for jj in range(max(1,1+ii-pl.nData),min(mm,ii)):
+            dataOut[ii] += pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+ii-jj]
 
-##    for ii in range(1,pl.nDataOut):
-##        kk = (ii-1)/md.ss
-##        mm = ii-(kk-1)*md.ss
-##        for jj in range(max(1,1+ii-pl.nData),min(mm,ii)):
-##            dataOut[ii] += pl.kernel[orderM1Half+jj]*dataIn[orderM1Half+ii-jj]
-
-##    for ii in range(md.ss+1):
-##         for jj in range(1,md.ss+1):
-##            dataOut[ii] += signData*pl.kernel[orderM1Half+ii+jj]*dataIn[orderM1Half+jj]
-##    for ii in range(1,pl.nDataOut):
-##        dataOut[ii] += (1.+signData)*0.5*pl.kernel[orderM1Half+ii]*dataIn[orderM1Half]
+    for ii in range(md.ss+1):
+         for jj in range(1,md.ss+1):
+            dataOut[ii] += signData*pl.kernel[orderM1Half+ii+jj]*dataIn[orderM1Half+jj]
+    for ii in range(1,pl.nDataOut):
+        dataOut[ii] += (1.+signData)*0.5*pl.kernel[orderM1Half+ii]*dataIn[orderM1Half]
 
     return 0
 
@@ -792,6 +759,7 @@ cdef int destroy_conv_fmmExpCheb(conv_plan* pl) nogil except -1:
         free(md.ltp)
         free(md.ltp0)
         free(md.stm)
+        free(md.stm0)
         free(md.ltlp)
         free(md.ltlm)
         free(md)
@@ -831,12 +799,9 @@ ctypedef struct kernelFunCombinerStruct:
     double tMeanMTauMean
     double tp
     double delta
-    double* funvals
-    int pp1Exp
+    double lam
     funPtr kernelFunLog
     void* kernelFunLogPar
-    double* chebRtsExp
-    double* chebWghtsExp
 
 cdef int kernelFunCombiner(double* xx, void* par, double* out) nogil:
 
@@ -846,9 +811,7 @@ cdef int kernelFunCombiner(double* xx, void* par, double* out) nogil:
     
     temp0 = st.tMeanMTauMean+st.delta*(st.tp-xx[0])
     st.kernelFunLog(&temp0, st.kernelFunLogPar, &temp1)
-    out[0] = math.exp( temp1 + #cheb.barycentricInt(st.tp, st.funvals, md.chebRtsExp, chebWghtsExp, pp1Exp) + temp1 - 
-                       cheb.barycentricInt(xx[0], st.funvals, st.chebRtsExp, st.chebWghtsExp, st.pp1Exp) - 
-                       cheb.barycentricInt(0., st.funvals, st.chebRtsExp, st.chebWghtsExp, st.pp1Exp))
+    out[0] = math.exp( temp1 - st.lam*st.delta*xx[0] )
     
     return 0
     
@@ -856,14 +819,53 @@ cdef int kernelFunCombiner(double* xx, void* par, double* out) nogil:
 
 
 
+cdef int _linReg(double* vals, int nn, double* aa, double* bb) nogil except -1:
+
+    cdef:
+        int ii
+        double* ab = [0., 0.]
+        double* xtx = [nn, (nn-1.)*nn/2., (nn-1.)*nn/2., (nn-1.)*nn*(2.*nn-1.)/6.]
+        double* xtvals = [0., 0.]
     
+    if nn < 2:
+        with gil:
+            raise ValueError("Number of values too small for linear regression")
+    
+    for ii in range(nn):
+        xtvals[0] += vals[ii]
+        xtvals[1] += ii*vals[ii]
+    
+    bb[0] = (xtvals[1] - xtx[2]/xtx[0]*xtvals[0])/(xtx[3]-xtx[2]/xtx[0]*xtx[1])
+    aa[0] = (xtvals[0] - xtx[1]*bb[0])/xtx[0]
+
+    return 0
 
 
+############################################################################################################################################
 
 
+cdef double _max(double* arr, int nn) nogil:
+
+    cdef:
+        double maxVal = -const.doubleMax#arr[0]
+        int ii
+        
+    for ii in range(nn):
+        maxVal = max(arr[ii], maxVal)
+            
+    return maxVal
 
 
+cdef double _min(double* arr, int nn) nogil:
 
+    cdef:
+        double minVal = const.doubleMax#arr[0]
+        int ii
+        
+    for ii in range(nn):
+        minVal = min(arr[ii], minVal)
+            
+    return minVal
 
 
 

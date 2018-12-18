@@ -4,8 +4,8 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memset
 
 from openConv.trap cimport plan_conv_trap, execute_conv_trap, destroy_conv_trap
-from openConv.fft cimport plan_conv_fft, execute_conv_fft, destroy_conv_fft, \
-                          plan_conv_fftExp, execute_conv_fftExp, destroy_conv_fftExp
+from openConv.fft cimport plan_conv_fft, execute_conv_fft, destroy_conv_fft#, \
+#                          plan_conv_fftExp, execute_conv_fftExp, destroy_conv_fftExp
 from openConv.fmm cimport plan_conv_fmmCheb, execute_conv_fmmCheb, destroy_conv_fmmCheb, \
                           plan_conv_fmmExpCheb, execute_conv_fmmExpCheb, destroy_conv_fmmExpCheb
 cimport openConv.interpolate as interp
@@ -88,8 +88,8 @@ cdef conv_plan* plan_conv(int nData, int symData, double* kernel, int nKernel, i
                 plan_conv_fmmCheb(pl, kernelFun = kernelFun, kernelFunPar = kernelFunPar, eps = eps)
             elif pl.method == 3:
                 plan_conv_fmmExpCheb(pl, kernelFun = kernelFun, kernelFunPar = kernelFunPar, eps = eps)
-            elif pl.method == 4:
-                plan_conv_fftExp(pl, eps = eps)
+#            elif pl.method == 4:
+#                plan_conv_fftExp(pl, eps = eps)
             else:
                 with gil:
                     raise NotImplementedError('Method not implemented for given parameters.')
@@ -148,8 +148,8 @@ cdef int execute_conv(conv_plan* pl, double* dataIn, double* dataOut, int leftBo
         execute_conv_fmmCheb(pl, dataInCpExt, dataOut)
     elif pl.method == 3:
         execute_conv_fmmExpCheb(pl, dataInCpExt, dataOut)
-    elif pl.method == 4:
-        execute_conv_fftExp(pl, dataInCpExt, dataOut)
+#    elif pl.method == 4:
+#        execute_conv_fftExp(pl, dataInCpExt, dataOut)
     else:
         free(dataInCpExt)
         with gil:
@@ -183,8 +183,8 @@ cdef int destroy_conv(conv_plan* pl) nogil except -1:
             destroy_conv_fmmCheb(pl)
         elif pl.method == 3:
             destroy_conv_fmmExpCheb(pl)
-        elif pl.method == 4:
-            destroy_conv_fftExp(pl)
+#        elif pl.method == 4:
+#            destroy_conv_fftExp(pl)
         else:
             with gil:
                 raise NotImplementedError('Method not implemented for given parameters.')
