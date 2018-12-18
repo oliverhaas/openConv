@@ -75,6 +75,3 @@ If data points outside of the integration interval can be provided these end cor
 
 
 
-
-
-
