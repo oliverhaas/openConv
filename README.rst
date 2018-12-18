@@ -82,26 +82,9 @@ Transform Methods
 
 It is fairly common to use directly the discrete convolution to approximate the convolution integral, often with smaller
 improvements like using trapezoidal rule instead of rectangle rule. This yields usually neither good order of convergence
-(second order with trapezoidal rule), nor fast calculation (quadratic *O(N^2)* computational complexity).
+(second order with trapezoidal rule), nor fast calculation (quadratic *O(N^2)* computational complexity). **openConv** intends to provide methods to calculate these convolutions efficiently, fast, and with high accuracy. Beside the common "fast convolution" algorithm based on the Fast Fourier Transform we provide methods based on the Fast Multipole Method and high order end correction, which outclass common methods in many cases in most aspects (convergence order, error, computational complexity, etc.).
 
-One option instead of direct calculation is the use of an Fast Fourier Transform (FFT) based convolution, or often called
-"fast convolution" algorithm. This approach gives linearithmic *O(Nlog(N))* computational complexity, but possibly large
-relative errors of the result, since the error scales with the maximum values of all the kernel and data values. In case of
-functions with high dynamic range, e.g. Gaussians, the tails of the results are poorly resolved.
-
-Even better computational complexity (linear *O(N)*) can be achieved by the [Fast Multipole Method](https://en.wikipedia.org/wiki/Fast_multipole_method) (FMM). 
-There are so called black box FMM described in literature (e.g. by [Tausch](https://link.springer.com/chapter/10.1007/978-3-642-25670-7_6)),
-which in principle work well for smooth kernels with not too high dynamic range. In **openConv** we extend this scheme to functions
-with somewhat exponential decay and thus can deal with a large class of functions with high dynamic range.
-
-To increase the order of convergence **openConv** uses end corrections for the trapezoidal rule as described in the 
-reference by [Kapur](https://epubs.siam.org/doi/abs/10.1137/S0036142995287847).
-If data points outside of the integration interval can be provided these end corrections are arbitrary order stable. Otherwise I wouldn't
-recommend going higher than 5th order. As of now we provide the coefficients up to 20th order. The *Mathematica* 
-[notebook](add/calcCoeffsSmooth.nb) which calculated these coefficients can be found in this repository as well.
-
-In the examples some more details are discussed and mentioned; in general the examples are a good way to learn how to understand and
-use the code.
+In the documentation and the examples more details are discussed and mentioned; in general both are a good way to learn how to understand and use the code.
 
 
 Copyright and License
