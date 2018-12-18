@@ -2,7 +2,6 @@
 from libc.stdlib cimport malloc, calloc, free
 
 import numpy as np
-import matplotlib.pyplot as mpl
 
 cimport openConv.constants as const
 cimport openConv.mathFun as math
