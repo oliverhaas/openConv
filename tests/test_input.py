@@ -7,7 +7,7 @@ from nose.tools import *
 
 @raises(NotImplementedError)
 def test_methodNotImplemented():
-    oa.Conv(10, 2, None, np.zeros(29), 2, 1., 20, method = -1)
+    oc.Conv(10, 2, None, np.zeros(29), 2, 1., 20, method = -1)
 
 
 #@nottest
