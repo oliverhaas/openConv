@@ -402,13 +402,12 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         if pl.kernel[ii] <= 0.:
             kk = ii
             break
-    if kk < 20:
+    if kk < 10:
         with gil:
             raise ValueError('Either kernel resolution is not sufficient or input is negative kernel. \
                               Not enough non-zero values to estimate asymptotic exponential scaling. ')
-    
-    with gil:
-        print 'kk', kk
+#    with gil:
+#        print 'kk', kk
 
     # Take care of log-scale kernel values and estimate rough exponential asymptotic scaling
     kernelLog = <double*> malloc((pl.nKernel+2*orderM1Half)*sizeof(double))
@@ -421,7 +420,7 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         with gil:
             raise ValueError('Asymptotic scaling seems not to be decaying exponentially.')            
     for ii in range(kk, pl.nKernel+2*orderM1Half):
-        kernelLog[ii] = kernelLog[kk-1] - lam*pl.stepSize*(ii-kk+1)
+        kernelLog[ii] = kernelLog[kk-1] - lam*pl.stepSize*(ii-kk+1)     # TODO maybe smoother
 #    with gil:
 #        for ii in range(pl.nKernel+2*orderM1Half):
 #            print ii, kernelLog[ii]
@@ -443,9 +442,9 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         kFLHS.kernelFunPar = kFP
         kFL = &kernelFunLogHelper
         kFLP = <void*> &kFLHS
-    
-    with gil:
-        print 'break 1'
+
+#    with gil:
+#        print 'break 1'
     # Calculate needed order for desired precision
     md.nlevs = max(<int> ( math.log2((pl.nDataOut-1.)/4.) + 1. ), 2) # Maximal estimate just to check
     md.pp1 = 3
@@ -473,9 +472,8 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
 #            with gil:
 #                print ii, jj, md.pp1
 
-    
-    with gil:
-        print 'break 2'    
+#    with gil:
+#        print 'break 2'    
 #        kFCS.tMeanMTauMean = 0.5*pl.stepSize*(pl.nKernel+pl.shiftKernel-1)
 #        kFCS.delta = kFCS.tMeanMTauMean
 #        kFCS.lam = 0.
@@ -545,9 +543,9 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         with gil:        
             raise MemoryError('Malloc ruturned a NULL pointer, probably not enough memory available.')
 
-    with gil:
-        print 'break 3', md.pp1, md.ss
-        raw_input('...')
+#    with gil:
+#        print 'break 3', md.pp1, md.ss
+#        raw_input('...')
     # More hierarchical decomposition stuff
     md.klCum[0] = 0
     md.kl[0] = 2**md.nlevs
@@ -612,9 +610,8 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
                 kF(&temp0, kFP, &md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj])
                 
     free(chebRts)
-
-    with gil:
-        print 'break 4'
+#    with gil:
+#        print 'break 4'
         
     return 0
 
