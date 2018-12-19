@@ -111,7 +111,7 @@ cdef double barycentricInt(double xx, double* funvals, double* nodes, double* we
 
 
 
-cdef int estimateOrderCheb(funPtr fun, void* funPar, double aa, double bb, double eps, int nn, int nMax = 10000) nogil except -1:
+cdef int estimateOrderCheb(funPtr fun, void* funPar, double aa, double bb, double eps, int nn, int nMax = 1000) nogil except -1:
 
     cdef:
         double* chebRts
@@ -120,12 +120,8 @@ cdef int estimateOrderCheb(funPtr fun, void* funPar, double aa, double bb, doubl
         int ii, nFound, indMax
         fftw_plan pl
         double xx, chebCoeffsMax
-        double epsDCT = const.machineEpsilon*500.   # DCT noise level seems to be around that range, maybe nn*machEps or nn**2*machEps???
+        double epsDCT = const.machineEpsilon*1.e3   # DCT noise level seems to be around that range, maybe nn*machEps or nn**2*machEps???
     
-    if nn >= nMax: # Hard upper limit for all applications
-        with gil:
-            print 'WARNING: Chebyshev order estimation did not converge, but reached maximum order.'
-        return nMax
             
     nn = max(nn,5) # Hard lower limit for all applications due to adaptive truncation criteria
 
@@ -164,6 +160,12 @@ cdef int estimateOrderCheb(funPtr fun, void* funPar, double aa, double bb, doubl
         if chebCoeffs[ii] >= chebCoeffsMax:
             chebCoeffsMax = chebCoeffs[ii]
             indMax = ii
+    
+#    # TESTING
+#    with gil:
+#        for ii in range(nn):
+#            print ii, chebCoeffs[ii], nn, nMax
+            
     for ii in range(indMax+1,nn):
         chebCoeffs[ii] /= chebCoeffsMax
     
@@ -181,8 +183,13 @@ cdef int estimateOrderCheb(funPtr fun, void* funPar, double aa, double bb, doubl
     chebCoeffsMax = max(chebCoeffs[nn-1], chebCoeffs[nn-2], chebCoeffs[nn-3])
     nFound = min(<int> (1.1*math.log(eps)/math.log(chebCoeffsMax)*(nn-indMax)), 2*nn)   # Assume exponential decrease & safety factor
     fftw_free(chebCoeffs)
-
-    return estimateOrderCheb(fun, funPar, aa, bb, eps, nFound)
+    
+    if nFound >= nMax: # Hard upper limit
+#        with gil:
+#            print 'WARNING: Chebyshev order estimation did not converge, but reached maximum order.'
+        return nMax
+        
+    return estimateOrderCheb(fun, funPar, aa, bb, eps, nFound, nMax = nMax)
 
 
 

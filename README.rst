@@ -60,6 +60,8 @@ Python modules, which were all installed the standard way with either :code:`sud
 
 - gcc 5.4.0
 
+- FFTW3 3.3.4
+
 
 As usual newer versions of the libraries should work as well, and many older versions will too. I'm sure it's possible to
 get **openConv** to run on vastly different systems, like e.g. Windows systems, but obviously I haven't extensively tested
@@ -71,7 +73,7 @@ Issues
 --------------
 
 
-In contrast to other codes I made available, **openConv** has as of now only very specific use-cases I actually implemented and/or debugged. I strongly recommend every user to thourougly check if the methods work as intended for their specific problem. For most people **openConv** will thus not be a useable code as is, but more a starting point or inspriration for their own code.
+In contrast to other codes I made available, **openConv** has as of now only very specific use-cases I actually needed, thus implemented and debugged. I strongly recommend every user to thourougly check if the methods work as intended for their specific problem. For most people **openConv** will thus not be a useable code as is, but more a starting point or inspriration for their own code.
 If there are any issues, bugs or feature request just let me know. Gaps in the implementation might be filled by me if requested.
 
 

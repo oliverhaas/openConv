@@ -4,11 +4,13 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memset
 
 from openConv.trap cimport plan_conv_trap, execute_conv_trap, destroy_conv_trap
-from openConv.fft cimport plan_conv_fft, execute_conv_fft, destroy_conv_fft#, \
-#                          plan_conv_fftExp, execute_conv_fftExp, destroy_conv_fftExp
+from openConv.fft cimport plan_conv_fft, execute_conv_fft, destroy_conv_fft
 from openConv.fmm cimport plan_conv_fmmCheb, execute_conv_fmmCheb, destroy_conv_fmmCheb, \
                           plan_conv_fmmExpCheb, execute_conv_fmmExpCheb, destroy_conv_fmmExpCheb
+
 cimport openConv.interpolate as interp
+cimport openConv.constants as const
+
 import openConv.coeffs as coeffs
 
     
@@ -21,7 +23,7 @@ import openConv.coeffs as coeffs
 cdef conv_plan* plan_conv(int nData, int symData, double* kernel, int nKernel, int symKernel, double stepSize, int nDataOut,
                           funPtr kernelFun = NULL, void* kernelFunPar = NULL, double shiftData = 0., double shiftKernel = 0., 
                           int leftBoundaryKernel = 0, int rightBoundaryKernel = 0, int method = 0, int order = 3, 
-                          double eps = 1.e-15) nogil except NULL:
+                          double eps = 1.e3*const.machineEpsilon) nogil except NULL:
 
     cdef:
         conv_plan* pl
@@ -76,6 +78,8 @@ cdef conv_plan* plan_conv(int nData, int symData, double* kernel, int nKernel, i
             leftBoundaryKernel = 3
             rightBoundaryKernel = 3
     else:
+        # TODO don't unnecessarily cut data
+        pl.nKernel = pl.nDataOut+pl.nData-1
         pl.kernel = cpExt(kernel, pl.nKernel, leftBoundaryKernel, pl.shiftKernel, rightBoundaryKernel, 0., pl.order)
 
     with gil:
@@ -88,8 +92,6 @@ cdef conv_plan* plan_conv(int nData, int symData, double* kernel, int nKernel, i
                 plan_conv_fmmCheb(pl, kernelFun = kernelFun, kernelFunPar = kernelFunPar, eps = eps)
             elif pl.method == 3:
                 plan_conv_fmmExpCheb(pl, kernelFun = kernelFun, kernelFunPar = kernelFunPar, eps = eps)
-#            elif pl.method == 4:
-#                plan_conv_fftExp(pl, eps = eps)
             else:
                 with gil:
                     raise NotImplementedError('Method not implemented for given parameters.')
@@ -148,15 +150,13 @@ cdef int execute_conv(conv_plan* pl, double* dataIn, double* dataOut, int leftBo
         execute_conv_fmmCheb(pl, dataInCpExt, dataOut)
     elif pl.method == 3:
         execute_conv_fmmExpCheb(pl, dataInCpExt, dataOut)
-#    elif pl.method == 4:
-#        execute_conv_fftExp(pl, dataInCpExt, dataOut)
     else:
         free(dataInCpExt)
         with gil:
             raise NotImplementedError('Method not implemented for given parameters.')
 
-#    # Do end corrections
-#    endCorrections(pl, dataInCpExt, dataOut)
+    # Do end corrections
+    endCorrections(pl, dataInCpExt, dataOut)
     
     # Free temporary dataIn array
     free(dataInCpExt)

@@ -1,6 +1,8 @@
 
 
 import datetime
+import matplotlib.pyplot as mpl
+import numpy
 
 from libc.stdlib cimport malloc, calloc, free
 from libc.string cimport memset
@@ -88,7 +90,7 @@ cdef int plan_conv_fmmCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kernelF
     # Handling of kernel function
     if NULL == kernelFun:
         md.kernelInterp = interp.Newton1D1DEquiFromData(pl.kernel, (pl.shiftKernel-orderM1Half)*pl.stepSize, 
-                                                        (pl.nKernel+pl.shiftKernel+orderM1Half)*pl.stepSize, pl.nKernel+2*orderM1Half, 
+                                                        (pl.nKernel-1+pl.shiftKernel+orderM1Half)*pl.stepSize, pl.nKernel+2*orderM1Half, 
                                                         degree = max(pl.order-1,1))
         md.kernelFun = &kernelFunHelper
         md.kernelFunPar = <void*> md.kernelInterp
@@ -405,11 +407,14 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
             raise ValueError('Either kernel resolution is not sufficient or input is negative kernel. \
                               Not enough non-zero values to estimate asymptotic exponential scaling. ')
     
+    with gil:
+        print 'kk', kk
+
     # Take care of log-scale kernel values and estimate rough exponential asymptotic scaling
     kernelLog = <double*> malloc((pl.nKernel+2*orderM1Half)*sizeof(double))
     for ii in range(kk):
         kernelLog[ii] = math.log(pl.kernel[ii])
-    jj = <int> (0.8*kk)
+    jj = max(<int> (0.5*kk), pl.nKernel-3)  # TODO safer option
     _linReg(&kernelLog[jj], kk-jj, &temp0, &temp1)
     lam = -temp1/pl.stepSize
     if lam < 0.:
@@ -417,12 +422,15 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
             raise ValueError('Asymptotic scaling seems not to be decaying exponentially.')            
     for ii in range(kk, pl.nKernel+2*orderM1Half):
         kernelLog[ii] = kernelLog[kk-1] - lam*pl.stepSize*(ii-kk+1)
-    
+#    with gil:
+#        for ii in range(pl.nKernel+2*orderM1Half):
+#            print ii, kernelLog[ii]
+#        raw_input('...')
     # Further handling of kernel function
     if NULL == kernelFun:
         # Interpolate in log scale since function assumed to be somewhat exponential
         kI = interp.Newton1D1DEquiFromData(kernelLog, (pl.shiftKernel-orderM1Half)*pl.stepSize, 
-                                           (pl.nKernel+pl.shiftKernel+orderM1Half)*pl.stepSize, pl.nKernel+2*orderM1Half, 
+                                           (pl.nKernel-1+pl.shiftKernel+orderM1Half)*pl.stepSize, pl.nKernel+2*orderM1Half, 
                                            degree = max(pl.order-1,1))
         kF = &kernelFunExpHelper
         kFP = <void*> kI
@@ -436,6 +444,8 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         kFL = &kernelFunLogHelper
         kFLP = <void*> &kFLHS
     
+    with gil:
+        print 'break 1'
     # Calculate needed order for desired precision
     md.nlevs = max(<int> ( math.log2((pl.nDataOut-1.)/4.) + 1. ), 2) # Maximal estimate just to check
     md.pp1 = 3
@@ -448,32 +458,63 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         temp0 *= 0.5
         kFCS.delta = 0.125*temp0
         kFCS.tMeanMTauMean = 0.5*temp0
+        kk = min(<int> (kFCS.delta*2./pl.stepSize + 1.), 100)
+        if md.pp1 > kk:
+            break
         for jj in range(-1,2,1):
             kFCS.tp = jj
-            md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., temp1, 30, nMax = 100))
+            md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., temp1, min(50,kk), nMax = kk))
+#            with gil:
+#                print ii, jj, md.pp1
         kFCS.tMeanMTauMean = 0.75*temp0
         for jj in range(-1,2,1):
             kFCS.tp = jj
-            md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., temp1, 30, nMax = 100))
+            md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., temp1, min(50,kk), nMax = kk))
+#            with gil:
+#                print ii, jj, md.pp1
+
     
-    for ii in range(pl.nKernel+2*orderM1Half):
-        kernelLog[ii] += ii*pl.stepSize*lam
-    kk = 2
-    epsInc = const.doubleMax
-    for ii in range(md.nlevs):
-        if pl.nKernel-2*kk <= 0:
-            break
-        epsInc = min( epsInc, _min(&kernelLog[orderM1Half+kk], min(2*kk,pl.nKernel-kk)) - \
-                              _max(&kernelLog[orderM1Half+kk], min(2*kk,pl.nKernel-kk)) )
-        epsInc = min( epsInc, _min(&kernelLog[orderM1Half+2*kk], min(2*kk,pl.nKernel-2*kk)) - \
-                              _max(&kernelLog[orderM1Half+2*kk], min(2*kk,pl.nKernel-2*kk)) )        
-        kk *= 2
-    epsInc = math.exp(epsInc)*eps/temp1
-    md.pp1 = <int> ((md.pp1-1)*(math.log(epsInc)/math.log(temp1)+1.) + 0.5)
-    if epsInc*temp1*1.e3 < const.machineEpsilon:
-        with gil:
-            print str(datetime.datetime.now()) + ' WARNING: Kernel can not be approximated to requested precision,' + \
-                  'probably losing ' + str((<int> math.log10(epsInc*temp1/const.machineEpsilon))) + ' orders of precision.'
+    with gil:
+        print 'break 2'    
+#        kFCS.tMeanMTauMean = 0.5*pl.stepSize*(pl.nKernel+pl.shiftKernel-1)
+#        kFCS.delta = kFCS.tMeanMTauMean
+#        kFCS.lam = 0.
+#        kFCS.tp = 0.
+#        for ii in range(pl.nKernel):
+#            temp0 = 1.-2.*ii/(pl.nKernel-1)
+#            kernelFunCombiner(&temp0, &kFCS, &temp1)
+##            kI.interpolate(kI, &temp0, &temp1)
+#            temp0 = ii*pl.stepSize
+#            kI.interpolate(kI, &temp0, &ti)
+#            print ii, temp0, ii*pl.stepSize, math.log(temp1), kernelLog[ii+orderM1Half], ti, kernelLog[ii+orderM1Half]+lam*ii*pl.stepSize
+#            
+#        bnp = numpy.empty(pl.nKernel+2*orderM1Half)
+#        valnp = numpy.empty(pl.nKernel+2*orderM1Half)
+#        for jj in range(pl.nKernel+2*orderM1Half):
+#            bnp[jj] = (jj-orderM1Half)*pl.stepSize
+#            valnp[jj] = kernelLog[jj+orderM1Half]+lam*jj*pl.stepSize
+#        mpl.plot(bnp,-valnp,'.-r')
+#        mpl.plot(bnp,valnp,'.-y')
+#        mpl.show()
+        
+#    for ii in range(pl.nKernel+2*orderM1Half):
+#        kernelLog[ii] += ii*pl.stepSize*lam
+#    kk = 2
+#    epsInc = const.doubleMax
+#    for ii in range(md.nlevs):
+#        if pl.nKernel-2*kk <= 0:
+#            break
+#        epsInc = min( epsInc, _min(&kernelLog[orderM1Half+kk], min(2*kk,pl.nKernel-kk)) - \
+#                              _max(&kernelLog[orderM1Half+kk], min(2*kk,pl.nKernel-kk)) )
+#        epsInc = min( epsInc, _min(&kernelLog[orderM1Half+2*kk], min(2*kk,pl.nKernel-2*kk)) - \
+#                              _max(&kernelLog[orderM1Half+2*kk], min(2*kk,pl.nKernel-2*kk)) )        
+#        kk *= 2
+#    epsInc = math.exp(epsInc)*eps/temp1
+#    md.pp1 = <int> ((md.pp1-1)*(math.log(epsInc)/math.log(temp1)+1.) + 0.5)
+#    if epsInc*temp1*1.e3 < const.machineEpsilon:
+#        with gil:
+#            print str(datetime.datetime.now()) + ' WARNING: Kernel can not be approximated to requested precision,' + \
+#                  'probably losing ' + str((<int> math.log10(epsInc*temp1/const.machineEpsilon))) + ' orders of precision.'
     free(kernelLog)
         
     # Hierarchical decomposition
@@ -504,6 +545,9 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         with gil:        
             raise MemoryError('Malloc ruturned a NULL pointer, probably not enough memory available.')
 
+    with gil:
+        print 'break 3', md.pp1, md.ss
+        raw_input('...')
     # More hierarchical decomposition stuff
     md.klCum[0] = 0
     md.kl[0] = 2**md.nlevs
@@ -568,7 +612,10 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
                 kF(&temp0, kFP, &md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj])
                 
     free(chebRts)
-    
+
+    with gil:
+        print 'break 4'
+        
     return 0
 
 
@@ -811,8 +858,10 @@ cdef int kernelFunCombiner(double* xx, void* par, double* out) nogil:
     
     temp0 = st.tMeanMTauMean+st.delta*(st.tp-xx[0])
     st.kernelFunLog(&temp0, st.kernelFunLogPar, &temp1)
-    out[0] = math.exp( temp1 - st.lam*st.delta*xx[0] )
-    
+    out[0] = math.exp( temp1 + st.lam*temp0 )
+#    with gil:
+#        print temp0
+
     return 0
     
 #############################################################################################################################################
