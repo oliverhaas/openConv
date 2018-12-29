@@ -91,7 +91,9 @@ cdef int kernelFunPyWrap(double* xx, void* par, double* out) nogil:
 #        print <object> par, <object> par[0], <object> (par[0])
 #        raw_input('...')
         fpy = <object> par
-        out[0] = fpy(xx[0])
+        out[0] = <double> fpy(xx[0])
     
+#        print 'kernelFunPyWrap', xx[0], out[0]
+        
     return 0
 

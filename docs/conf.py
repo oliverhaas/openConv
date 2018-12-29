@@ -14,7 +14,7 @@
 #
 # import os
 # import sys
-# sys.path.insert(0, os.path.abspath('../openAbel/abel'))
+# sys.path.insert(0, os.path.abspath('../openConv/abel'))
 
 
 # Small monkey patch to make Cython autodoc possible
@@ -27,14 +27,14 @@ inspect.isfunction = isfunction
 
 # -- Project information -----------------------------------------------------
 
-project = u'openAbel'
+project = u'openConv'
 copyright = u'2018, Oliver Sebastian Haas'
 author = u'Oliver Sebastian Haas'
 
 # The short X.Y version
 version = u''
 # The full version, including alpha/beta/rc tags
-release = u'0.2'
+release = u'0.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -116,7 +116,7 @@ html_static_path = []
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'openAbeldoc'
+htmlhelp_basename = 'openConvdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -143,7 +143,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'openAbel.tex', u'openAbel Documentation',
+    (master_doc, 'openConv.tex', u'openConv Documentation',
      u'Oliver Sebastian Haas', 'manual'),
 ]
 
@@ -153,7 +153,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'openabel', u'openAbel Documentation',
+    (master_doc, 'openConv', u'openConv Documentation',
      [author], 1)
 ]
 
@@ -164,8 +164,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'openAbel', u'openAbel Documentation',
-     author, 'openAbel', 'One line description of project.',
+    (master_doc, 'openConv', u'openConv Documentation',
+     author, 'openConv', 'One line description of project.',
      'Miscellaneous'),
 ]
 

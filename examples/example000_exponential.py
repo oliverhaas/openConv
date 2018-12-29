@@ -22,9 +22,9 @@ xData = np.linspace(-orderM1Half*stepSize, orderM1Half*stepSize+xMaxData, nData+
 data = xData*np.exp(-xData/sigData)
 
 # Kernel
-lamKernel = 0.1
+lamKernel = 0.01
 def kern(xx):
-    return np.exp(-xx/lamKernel)
+    return np.exp(-xx/lamKernel)# + 1.e4*np.exp(-2.*xx/lamKernel)
 nKernel = 3250
 
 

@@ -64,22 +64,20 @@ cdef conv_plan* plan_conv(int nData, int symData, double* kernel, int nKernel, i
     pl.nDataOut = nDataOut
     pl.stepSize = stepSize
 
-    # Check for correct kernel size
+    # Check for large enough kernel size
     if pl.nKernel < pl.nDataOut+pl.nData-1:  
         if NULL == kernelFun:
             with gil:
                 raise ValueError('Not enough kernel data points for given parameters.')
         else:
-            pl.nKernel = pl.nDataOut+pl.nData-1
-            pl.kernel = <double*> malloc((nKernel+2*orderM1Half)*sizeof(double))
-            for ii in range(nKernel+2*orderM1Half):
+            pl.nKernel = 2*(pl.nDataOut+pl.nData-1)     # TODO Maybe there is something better than using 2 safety factor
+            pl.kernel = <double*> malloc((pl.nKernel+2*orderM1Half)*sizeof(double))
+            for ii in range(pl.nKernel+2*orderM1Half):
                 xx = (ii+pl.shiftKernel-orderM1Half)*pl.stepSize
                 kernelFun(&xx, kernelFunPar, &pl.kernel[ii])
             leftBoundaryKernel = 3
             rightBoundaryKernel = 3
     else:
-        # TODO don't unnecessarily cut data
-        pl.nKernel = pl.nDataOut+pl.nData-1
         pl.kernel = cpExt(kernel, pl.nKernel, leftBoundaryKernel, pl.shiftKernel, rightBoundaryKernel, 0., pl.order)
 
     with gil:
@@ -96,7 +94,7 @@ cdef conv_plan* plan_conv(int nData, int symData, double* kernel, int nKernel, i
                 with gil:
                     raise NotImplementedError('Method not implemented for given parameters.')
         except:
-            # TODO
+            # TODO something? Don't remember
             destroy_conv_trap(pl)
             raise
 
@@ -183,8 +181,6 @@ cdef int destroy_conv(conv_plan* pl) nogil except -1:
             destroy_conv_fmmCheb(pl)
         elif pl.method == 3:
             destroy_conv_fmmExpCheb(pl)
-#        elif pl.method == 4:
-#            destroy_conv_fftExp(pl)
         else:
             with gil:
                 raise NotImplementedError('Method not implemented for given parameters.')

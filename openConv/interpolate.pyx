@@ -423,13 +423,17 @@ ctypedef struct newton1D1DEquiHelper:
 cdef Interpolator* Newton1D1DEquiFromData(double* yy, double xMin, double xMax, int nx, int degree = 3) nogil except NULL:
 
     cdef:
-        Interpolator* interp
-        newton1D1DEquiHelper* helper
+        Interpolator* interp = NULL
+        newton1D1DEquiHelper* helper = NULL
         int ii
 
-    interp = <Interpolator*> malloc(sizeof(Interpolator))       # TODO null check
-    helper = <newton1D1DEquiHelper*> malloc(sizeof(newton1D1DEquiHelper))       # TODO null check
-
+    interp = <Interpolator*> malloc(sizeof(Interpolator))
+    helper = <newton1D1DEquiHelper*> malloc(sizeof(newton1D1DEquiHelper))
+    if NULL == interp or NULL == helper:
+        free(interp)
+        free(helper)
+        with gil:
+            raise MemoryError('Malloc ruturned a NULL pointer, probably not enough memory available.')
     interp.helper = helper
     interp.interpolate = _interpolate_Newton1D1DEqui
     interp.interpolateD = _interpolateD_Newton1D1DEqui
@@ -443,8 +447,12 @@ cdef Interpolator* Newton1D1DEquiFromData(double* yy, double xMin, double xMax, 
     helper.dxi = 1./helper.dx
     
     helper.nx = nx
-    helper.data = <double*> malloc(helper.nx*sizeof(double))     # TODO null check
-
+    helper.data = <double*> malloc(helper.nx*sizeof(double))
+    if NULL == helper.data:
+        free(interp)
+        free(helper)
+        with gil:
+            raise MemoryError('Malloc ruturned a NULL pointer, probably not enough memory available.')
     for ii in range(nx):
         helper.data[ii] = yy[ii]
 

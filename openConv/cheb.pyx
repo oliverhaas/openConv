@@ -165,7 +165,9 @@ cdef int estimateOrderCheb(funPtr fun, void* funPar, double aa, double bb, doubl
 #    with gil:
 #        for ii in range(nn):
 #            print ii, chebCoeffs[ii], nn, nMax
-            
+    if chebCoeffsMax == 0.:
+        return 1
+        
     for ii in range(indMax+1,nn):
         chebCoeffs[ii] /= chebCoeffsMax
     

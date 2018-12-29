@@ -31,8 +31,6 @@ cdef extern from 'fftw3.h':
 
     ctypedef unsigned int fftw_r2r_kind
     
-#    ctypedef double complex[2]     # TODO CHECK
-    
     # Standard transform
     fftw_plan fftw_plan_dft_1d(int n, complex* inData, complex* outData, int sign, unsigned flags) nogil
     

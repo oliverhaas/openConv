@@ -20,7 +20,9 @@ Introduction
 
 
 The main goal of **openConv** is to provide fast and efficient numerical convolutions of symmetric
-and smooth kernels and data of equispaced data in Python with all actual calculations done in Cython. 
+and smooth kernels and data of equispaced data in Python with all actual calculations done in Cython. It is intended to work in
+conjunction with `openAbel <https://github.com/oliverhaas/openAbel>`_ to calculate 2D convolutions of radially symmetric functions in
+atomic collisions. 
 The most useful methods implemented in my module for that purpose use the Fast Multipole Method combined with
 arbitrary order end correction of the trapezoidal rule to achieve both fast convergence and linear run time. Other methods are implemented
 for comparisons.
@@ -35,7 +37,7 @@ In most cases this should be pretty simple:
 
 - Clone the repository: :code:`git clone https://github.com/oliverhaas/openConv.git`
 - Install: :code:`sudo python setup.py install`
-- Run example: :code:`python example000_XXX.py`
+- Run example: :code:`python example000_exponential.py`
 
 This assumes dependencies are already met and you run a more or less similar system to mine (see `Dependencies`_).
 
@@ -84,7 +86,7 @@ Transform Methods
 
 It is fairly common to use directly the discrete convolution to approximate the convolution integral, often with smaller
 improvements like using trapezoidal rule instead of rectangle rule. This yields usually neither good order of convergence
-(second order with trapezoidal rule), nor fast calculation (quadratic *O(N^2)* computational complexity). **openConv** intends to provide methods to calculate these convolutions efficiently, fast, and with high accuracy. Beside the common "fast convolution" algorithm based on the Fast Fourier Transform we provide methods based on the Fast Multipole Method and high order end correction, which outclass common methods in many cases in most aspects (convergence order, error, computational complexity, etc.).
+(second order with trapezoidal rule), nor fast calculation (quadratic *O(N^2)* computational complexity). **openConv** intends to provide methods to calculate these convolutions efficiently, fast, and with high accuracy. Beside the common "fast convolution" algorithm based on the Fast Fourier Transform we provide methods based on the Fast Multipole Method and high order end correction, which outclass common methods in many cases in most aspects (convergence order, error, computational complexity, etc.), as long as the kernel is smooth.
 
 In the documentation and the examples more details are discussed and mentioned; in general both are a good way to learn how to understand and use the code.
 
