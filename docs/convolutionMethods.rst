@@ -18,7 +18,9 @@ Often both f and g often have some kind of symmetry around 0; **openConv** deals
 .. code-block:: python
 
     import openConv
-    convObj = oc.Conv(nData, symData, kern, kernFun, symKern, stepSize, nResult, method = method, order = order)    
+    convObj = oc.Conv(nData, symData, kern, kernFun, symKern, stepSize, nResult, method = method, order = order)
+    result = convObj.execute(data)
+
 
 Direct Convolution / Trapezoidal Rule
 --------------
@@ -28,6 +30,7 @@ improvements like using trapezoidal rule instead of rectangle rule. Especially r
 (second order with trapezoidal rule), nor fast calculation (quadratic *O(N^2)* computational complexity).
 
 Direct convolution is chosen by setting :code:`method=0`.
+
 
 FFT Convolution
 --------------
