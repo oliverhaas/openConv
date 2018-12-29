@@ -136,16 +136,6 @@ cdef int estimateOrderCheb(funPtr fun, void* funPar, double aa, double bb, doubl
         xx = 0.5*(1.+chebRts[ii])*(bb-aa) + aa
         fun(&xx, funPar, &funVals[ii])
     
-#    # TESTING
-#    with gil:
-#        xnp = np.zeros(nn)
-#        valnp = np.zeros(nn)
-#        for ii in range(nn):
-#            xnp[ii] = chebRts[ii]
-#            valnp[ii] = funVals[ii]
-#        mpl.plot(xnp,valnp)
-#        mpl.show()
-        
     free(chebRts)   # Don't need anymore, free asap
     
     fftw_execute(pl)    # Execute fft plan
@@ -161,10 +151,6 @@ cdef int estimateOrderCheb(funPtr fun, void* funPar, double aa, double bb, doubl
             chebCoeffsMax = chebCoeffs[ii]
             indMax = ii
     
-#    # TESTING
-#    with gil:
-#        for ii in range(nn):
-#            print ii, chebCoeffs[ii], nn, nMax
     if chebCoeffsMax == 0.:
         return 1
         
@@ -187,8 +173,6 @@ cdef int estimateOrderCheb(funPtr fun, void* funPar, double aa, double bb, doubl
     fftw_free(chebCoeffs)
     
     if nFound >= nMax: # Hard upper limit
-#        with gil:
-#            print 'WARNING: Chebyshev order estimation did not converge, but reached maximum order.'
         return nMax
         
     return estimateOrderCheb(fun, funPar, aa, bb, eps, nFound, nMax = nMax)

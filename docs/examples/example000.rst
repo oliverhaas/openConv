@@ -1,18 +1,18 @@
-example000_xxx
+example000_exponential
 =================
 
    
    
-.. figure:: example000_xxx.png
+.. figure:: example000_exponential.png
    :align: center
-   :alt: xxx
+   :alt: simple convolution with somewhat exponential kernel
 
-   xxx.
-
-
+   Simple convolution with somewhat exponential kernel.
 
 
 
-.. literalinclude:: ../../examples/example000_xxx.py
+
+
+.. literalinclude:: ../../examples/example000_exponential.py
     :linenos:
     :language: python

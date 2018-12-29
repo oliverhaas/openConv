@@ -420,7 +420,7 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         # Interpolate in log scale since function assumed to be somewhat exponential
         kI = interp.Newton1D1DEquiFromData(kernelLog, (pl.shiftKernel-orderM1Half)*pl.stepSize, 
                                            (nKernelExt-1+pl.shiftKernel+orderM1Half)*pl.stepSize, nKernelExt+2*orderM1Half, 
-                                           degree = max(pl.order-1,1))
+                                           degree = max(pl.order+2,5))
         kF = &kernelFunExpHelper
         kFP = <void*> kI
         kFL = &kernelFunHelper
@@ -439,15 +439,15 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
         for ii in range(md.nlevs-md.nlevsCut, md.nlevs):    # TODO check
             temp0 *= 0.5
             kFCS.delta = 0.125*temp0
-            kk = min(<int> (kFCS.delta*2./pl.stepSize + 1.), 100)
-            if md.pp1 > kk:
+            kk = min(<int> (kFCS.delta/pl.stepSize + 0.5), 50)
+            if md.pp1 >= kk:
                 break
             for jj in range(-1,4,1):
                 kFCS.tMeanMTauMean = 0.5*temp0 + jj*kFCS.delta
                 md.pp1 = max(md.pp1, cheb.estimateOrderCheb(kernelFunCombiner, &kFCS, -1., 1., temp1, min(50,kk), nMax = kk))
-
+        
         free(kernelLog)
-            
+        
         # Hierarchical decomposition
         md.pp = max(2, md.pp1-1)
         md.pp1 = md.pp + 1
@@ -535,7 +535,8 @@ cdef int plan_conv_fmmExpCheb(conv_plan* pl, funPtr kernelFun = NULL, void* kern
                     md.mtl[(2*ll+1)*md.pp1**2+ii*md.pp1+jj] = math.exp(temp1 + temp2*lam)
                     
         free(chebRts)
-
+        kI.free(kI)
+        
     return 0
 
 
@@ -763,7 +764,7 @@ cdef int kernelFunCombiner(double* xx, void* par, double* out) nogil:
     temp0 = st.tMeanMTauMean
     st.kernelFunLog(&temp0, st.kernelFunLogPar, &temp2)
     out[0] = math.exp( temp1 - temp2 + st.lam*st.delta*xx[0] )
-        
+    
     return 0
     
 #############################################################################################################################################
