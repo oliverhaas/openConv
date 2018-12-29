@@ -1,7 +1,8 @@
 example000_exponential
 =================
 
-   
+
+This is a simple example which calculates the convolution of a Gaussian with a symmetric approximately exponential kernel.
    
 .. figure:: example000_exponential.png
    :align: center
