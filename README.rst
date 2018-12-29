@@ -86,7 +86,22 @@ Transform Methods
 
 It is fairly common to use directly the discrete convolution to approximate the convolution integral, often with smaller
 improvements like using trapezoidal rule instead of rectangle rule. This yields usually neither good order of convergence
-(second order with trapezoidal rule), nor fast calculation (quadratic *O(N^2)* computational complexity). **openConv** intends to provide methods to calculate these convolutions efficiently, fast, and with high accuracy. Beside the common "fast convolution" algorithm based on the Fast Fourier Transform we provide methods based on the Fast Multipole Method and high order end correction, which outclass common methods in many cases in most aspects (convergence order, error, computational complexity, etc.), as long as the kernel is smooth.
+(second order with trapezoidal rule), nor fast calculation (quadratic computational complexity). **openConv** intends
+to provide methods to calculate these convolutions efficiently, fast, and with high accuracy. Beside the common "fast convolution"
+algorithm based on the Fast Fourier Transform we provide methods based on the Fast Multipole Method and high order end correction,
+which outclass common methods in many cases in most aspects (convergence order, error, computational complexity, etc.),
+as long as the kernel is smooth.
+
+For the most important methods of we adapted the Chebyshev interpolation Fast Multipole Method (FMM) as described by 
+`Tausch <https://link.springer.com/chapter/10.1007/978-3-642-25670-7_6>`_ and calculated end corrections 
+for smooth functions similar to `Kapur <https://epubs.siam.org/doi/abs/10.1137/S0036142995287847>`_. 
+If data points outside of the integration interval can be provided these end corrections are arbitrary order stable
+and we provide coefficients up to 20th order, otherwise it's recommended to use at most 5th order.
+The FMM leads to an linear *O(N)* computational complexity algorithm. For approximately exponentially decaying functions, like e.g.
+often encountered in atomic physics, we introduced an exponential shift into the Chebyshev interpolation to get relative errors of the
+convolution result of up to machine precision.
+
+In both error and computational complexity there is no better existing method for the intended purpose to my knowledge.
 
 In the documentation and the examples more details are discussed and mentioned; in general both are a good way to learn how to understand and use the code.
 
