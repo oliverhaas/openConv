@@ -50,17 +50,15 @@ The code was run on several Ubuntu systems without problems. More specific I'm r
 Python modules, which were all installed the standard way with either :code:`sudo apt install libName` or 
 :code:`sudo pip install moduleName`. 
 
-- Python 2.7.12
+- Python 3.5.2
 
-- Numpy 1.14.0
+- Numpy 1.18.1
 
-- Scipy 1.1.0
+- Scipy 1.4.1
 
-- Cython 0.23.4
+- Cython 0.29.14
 
-- Matplotlib 2.2.0
-
-- gcc 5.4.0
+- Matplotlib 3.0.3
 
 - FFTW3 3.3.4
 
@@ -109,7 +107,7 @@ In the documentation and the examples more details are discussed and mentioned; 
 Copyright and License
 --------------
 
-Copyright 2016-2018 Oliver Sebastian Haas.
+Copyright 2016-2020 Oliver Sebastian Haas.
 
 The code **openConv** is published under the GNU GPL version 3. This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by the Free Software Foundation. 
