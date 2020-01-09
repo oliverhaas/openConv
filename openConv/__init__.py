@@ -1,1 +1,1 @@
-from wrap import Conv
+from openConv.wrap import Conv
