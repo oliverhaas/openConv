@@ -2,13 +2,27 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 from Cython.Build import cythonize
+
+import cython
 import numpy
+import scipy
+import matplotlib
+import sys
+import os
+
+print('\nDependencies versions:')
+print('python: ' + str(sys.version_info[0])+'.'+str(sys.version_info[1])+'.'+str(sys.version_info[2]))
+print('cython: ' + cython.__version__)
+print('numpy: ' + numpy.__version__)
+print('scipy: ' + scipy.__version__)
+print('matplotlib: ' + matplotlib.__version__)
+print()
 
 ecadef = ["-O3", "-Wunused-but-set-variable"]
-#ecadef = ["-O0", "-g", "-Wunused-but-set-variable"]
 iddef = ["/usr/local/include/", "./", numpy.get_include()]
 lddef = ["/usr/local/lib/"]
-compdir = {'boundscheck': False, 'nonecheck': False, 'wraparound': False, 'cdivision': True, 'profile': False, 'infer_types': False}
+compdir = {'boundscheck': False, 'nonecheck': False, 'wraparound': False, 'cdivision': True, 
+           'profile': False, 'infer_types': False, 'language_level' : '3'}
 
 extensions = cythonize([
                         Extension('openConv.base',
@@ -62,9 +76,9 @@ extensions = cythonize([
                         compiler_directives = compdir
                         )
 
-
+vers = '0.2'
 setup(name = 'openConv',
-      version='0.1',
+      version=vers,
       packages = ['openConv'],
       package_data={'openConv': ['*.pxd','coeffsData/*']},
       cmdclass = {'build_ext': build_ext},
@@ -80,9 +94,9 @@ logoArt = """
              |_|                             
                                   
               
-openConv  Copyright (C) 2017-2018  Oliver Sebastian Haas
+openConv """+vers+"""  Copyright (C) 2017-2020  Oliver Sebastian Haas
                                              
 """
-print logoArt
+print(logoArt)
      
      

@@ -3,7 +3,7 @@
 import sys
 import numpy as np
 
-cimport base
+cimport openConv.base
 cimport openConv.interpolate as interp
 
 
@@ -57,7 +57,7 @@ cdef class Conv(object):
                                        leftBoundaryKernel = leftBoundaryKernel, rightBoundaryKernel = rightBoundaryKernel, method = method, 
                                        order = order, eps = eps)
         except:
-            print "Unexpected error in Cython routines:", sys.exc_info()[0], sys.exc_info()[1]
+            print("Unexpected error in Cython routines:", sys.exc_info()[0], sys.exc_info()[1])
             raise
 
 
@@ -73,7 +73,7 @@ cdef class Conv(object):
         try:
             base.execute_conv(self.plan, &dataInTemp[0], &dataOut[0], leftBoundary = leftBoundary, rightBoundary = rightBoundary)
         except:
-            print "Unexpected error in Cython routines:", sys.exc_info()[0], sys.exc_info()[1]
+            print("Unexpected error in Cython routines:", sys.exc_info()[0], sys.exc_info()[1])
             raise        
 
         return np.asarray(dataOut)
@@ -87,13 +87,8 @@ cdef class Conv(object):
 cdef int kernelFunPyWrap(double* xx, void* par, double* out) nogil:
     
     with gil:
-#        print 'hello', xx[0]
-#        print <object> par, <object> par[0], <object> (par[0])
-#        raw_input('...')
         fpy = <object> par
         out[0] = <double> fpy(xx[0])
     
-#        print 'kernelFunPyWrap', xx[0], out[0]
-        
     return 0
 
